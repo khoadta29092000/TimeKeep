@@ -1,25 +1,35 @@
-import { useFormik } from 'formik'
+import { Formik, useFormik } from 'formik'
 import React, { useState } from 'react'
 import * as Yup from 'yup'
 
 //mui
 import { FormControl, IconButton, InputLabel, TextField, InputAdornment, OutlinedInput, Button } from '@mui/material'
-
+import { LoadingButton } from '@mui/lab'
 //icon
 import Visibility from '@mui/icons-material/Visibility'
 import VisibilityOff from '@mui/icons-material/VisibilityOff'
+import { useDispatch } from 'react-redux'
+import { PutAccountAsyncApi } from '../../../Redux/Account/AccountSlice'
+import { useSnackbar } from '../../../Hook/useSnackbar'
 
 export default function ChangePassword() {
+    const [loadingButton, setLoadingButton] = useState(false)
     const [error, setError] = useState()
     const [showOldPassword, setShowOldPassword] = useState(false)
     const [showNewPassword, setShowNewPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+    const userStringEmployeeName = localStorage.getItem('employeeName')
+    const employeeName = JSON.parse(userStringEmployeeName)
     const initialValues = {
-        userName: 'VietDh21102000@gmail.com',
+        userName: employeeName,
         oldPassword: '',
         confirmPassword: '',
         newPassword: '',
     }
+    const showSnackbar = useSnackbar()
+    const userString = localStorage.getItem('user')
+    const userObject = JSON.parse(userString)
+    const dispatch = useDispatch()
     const frmUser = useFormik({
         initialValues: initialValues,
         validationSchema: Yup.object({
@@ -29,7 +39,30 @@ export default function ChangePassword() {
                 .required()
                 .oneOf([Yup.ref('newPassword')], 'Password not same!'),
         }),
-        onSubmit: (values) => {},
+        onSubmit: (values) => {
+            setLoadingButton(true)
+            dispatch(
+                PutAccountAsyncApi({
+                    body: {
+                        oldPassword: values.oldPassword,
+                        newPassword: values.newPassword,
+                    },
+                    token: userObject,
+                }).then((respone) => {
+                    setLoadingButton(false)
+                    showSnackbar({
+                        severity: 'success',
+                        children: 'Change Password Succesfully',
+                    })
+                    Formik.setValues({
+                        userName: employeeName,
+                        oldPassword: '',
+                        confirmPassword: '',
+                        newPassword: '',
+                    })
+                })
+            )
+        },
     })
     const handleClickShowOldPassword = () => setShowOldPassword((show) => !show)
     const handleClickShowNewPassword = () => setShowNewPassword((show) => !show)
@@ -54,7 +87,7 @@ export default function ChangePassword() {
                         disabled
                         onChange={frmUser.handleChange}
                         onBlur={frmUser.handleBlur}
-                        label="Email"
+                        label="Full Name"
                         variant="outlined"
                         value={initialValues.userName}
                     />
@@ -158,9 +191,19 @@ export default function ChangePassword() {
                         <div className="text mt-1 text-red-600 font-semibold">{frmUser.errors.confirmPassword}</div>
                     )}
                 </div>
-                <Button className="float-right" variant="contained" type="submit">
+                <LoadingButton
+                    className="float-right"
+                    type="submit"
+                    loading={loadingButton}
+                    color="info"
+                    variant="contained"
+                    sx={{
+                        textAlign: 'center',
+                    }}
+                    autoFocus
+                >
                     Save
-                </Button>
+                </LoadingButton>
             </form>
         </div>
     )

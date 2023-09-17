@@ -12,8 +12,24 @@ import { ref, getDownloadURL, uploadBytesResumable } from 'firebase/storage'
 import { storage } from '../../../Config/FirebaseConfig'
 
 //Mui
-import { Avatar, Button, FormControl, TextField, DialogActions, Tooltip, IconButton } from '@mui/material'
-
+import {
+    Avatar,
+    Button,
+    FormControl,
+    TextField,
+    DialogActions,
+    Tooltip,
+    IconButton,
+    Select,
+    InputLabel,
+    MenuItem,
+    Radio,
+    FormLabel,
+    RadioGroup,
+    FormControlLabel,
+    Grid,
+} from '@mui/material'
+import { LoadingButton } from '@mui/lab'
 //Icon
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import FemaleIcon from '@mui/icons-material/Female'
@@ -39,14 +55,16 @@ import {
     PutEmployeeAsyncApi,
     getEmployeeAsyncApi,
 } from '../../../Redux/Employee/employeeSlice'
+import { PostAccountAsyncApi, getRoleAsyncApi } from '../../../Redux/Account/AccountSlice'
+import { getDepartmentAsyncApi } from '../../../Redux/Department/DepartmentSlice'
 
 const columns = [
     { id: 'number', label: 'Number', minWidth: 50, align: 'center' },
     { id: 'email', label: 'Email', minWidth: 200, align: 'left' },
     { id: 'info', label: 'Name', minWidth: 200, align: 'left' },
-    { id: 'address', label: 'Address', minWidth: 250, align: 'left' },
-    { id: 'phoneNumber', label: 'Phone Number', minWidth: 100, align: 'left' },
-    { id: 'gender', label: 'Gender', minWidth: 50, align: 'center' },
+    { id: 'roleName', label: 'Role', minWidth: 250, align: 'left' },
+    { id: 'departmentName', label: 'Team', minWidth: 250, align: 'left' },
+
     { id: 'status', label: 'Status', minWidth: 50, align: 'center' },
     { id: 'action', label: 'Actions', minWidth: 50, align: 'center' },
 ]
@@ -66,57 +84,71 @@ export default function EmployeeAdmin() {
     const [page, setPage] = useState(0)
     const [rowsPerPage, setRowsPerPage] = useState(10)
     const [open, setOpen] = useState(false)
+    const [openTeam, setOpenTeam] = useState(false)
     const [openConfirm, setOpenConfirm] = useState(false)
     const [isAction, setIsAction] = useState(0)
     const [search, setSearch] = useState('')
     const [idDelete, setIdDelete] = useState()
+    const [loadingButton, setLoadingButton] = useState(false)
     const [selectedImage, setSelectedImage] = useState()
     const [click, SetClick] = useState(false)
+    const [arrTeam, setArrTeam] = useState([{ id: 1, email: '', team: [{ name: '', role: '' }] }])
     //setting redux
+
+    const { RoleList } = useSelector((state) => state.account)
     const { EmployeeList } = useSelector((state) => state.employee)
+    const { DepartmentList } = useSelector((state) => state.department)
     const dispatch = useDispatch()
     useEffect(() => {
-        dispatch(getEmployeeAsyncApi())
+        dispatch(getEmployeeAsyncApi({ roleId: '', departmentId: '', name: search }))
+        dispatch(getDepartmentAsyncApi())
+        dispatch(getRoleAsyncApi())
         return () => {}
-    }, [])
+    }, [search])
     const initialValues = {
-        employeeId: '',
-        managerId: '',
-        name: '',
-        address: '',
+        id: '',
+        username: '',
+        password: '',
+        firstName: '',
+        lastName: '',
         gender: '',
-        email: '',
+        address: '',
         phoneNumber: '',
-        status: '',
-        hireDate: new Date(),
-        avatar: '',
-        timeOffRemain: '',
-        employeesClassification: '',
+        roleID: '',
+        departmentID: '',
     }
     const formik = useFormik({
         initialValues: initialValues,
         validationSchema: Yup.object({
-            managerId: Yup.string().required(),
-            email: Yup.string().required(),
-            name: Yup.string().min(5, 'Too Short!').max(4000, 'Too Long!').required(),
-            address: Yup.string().min(5, 'Too Short!').max(4000, 'Too Long!').required(),
+            // password: Yup.string().required(),
+            username: Yup.string().required('Username is required').email('Invalid email address'),
+            firstName: Yup.string().min(2, 'Too Short!').max(4000, 'Too Long!').required(),
+            lastName: Yup.string().min(2, 'Too Short!').max(4000, 'Too Long!').required(),
             gender: Yup.string().required(),
             phoneNumber: Yup.string().required(),
-            status: Yup.string().required(),
-            timeOffRemain: Yup.number().typeError('not valid Number').required().positive(),
+            address: Yup.string().required(),
+            roleID: Yup.string().required(),
         }),
         onSubmit: (values) => {
             if (isAction == 1) {
+                setLoadingButton(true)
                 let today = new Date()
                 const newData = {
-                    hireDate: today,
-                    ...values,
+                    username: values.username,
+                    password: values.password,
+                    firstName: values.firstName,
+                    lastName: values.lastName,
+                    gender: values.gender == 'true' ? true : false,
+                    address: values.address,
+                    phoneNumber: values.phoneNumber,
+                    roleID: values.roleID,
+                    departmentID: values.departmentID == '' ? null : values.departmentID,
                 }
-                const { employeeId, ...data } = newData
 
-                dispatch(PostEmployeeAsyncApi(data))
+                dispatch(PostAccountAsyncApi(newData))
                     .then((response) => {
                         if (response.meta.requestStatus == 'fulfilled') {
+                            setLoadingButton(false)
                             setOpen(false)
                             setIsAction(0)
                             formik.setTouched({})
@@ -139,14 +171,29 @@ export default function EmployeeAdmin() {
                                 timeOffRemain: '',
                                 employeesClassification: '',
                             })
-                            dispatch(getEmployeeAsyncApi())
+                            dispatch(getEmployeeAsyncApi({ roleId: '', departmentId: '', name: search }))
                         }
                     })
-                    .catch((error) => {})
+                    .catch((error) => {
+                        setLoadingButton(false)
+                    })
             } else if (isAction == 2) {
+                const newData = {
+                    username: values.id,
+                    password: values.password,
+                    firstName: values.firstName,
+                    lastName: values.lastName,
+                    gender: values.gender == 'true' ? true : false,
+                    address: values.address,
+                    phoneNumber: values.phoneNumber,
+                    roleID: values.roleID,
+                    departmentID: values.departmentID == '' ? null : values.departmentID,
+                }
+                setLoadingButton(true)
                 dispatch(PutEmployeeAsyncApi(values))
                     .then((response) => {
                         if (response.meta.requestStatus == 'fulfilled') {
+                            setLoadingButton(false)
                             setOpen(false)
                             setIsAction(0)
                             formik.setTouched({})
@@ -169,10 +216,12 @@ export default function EmployeeAdmin() {
                                 timeOffRemain: '',
                                 employeesClassification: '',
                             })
-                            dispatch(getEmployeeAsyncApi())
+                            dispatch(getEmployeeAsyncApi({ roleId: '', departmentId: '', name: search }))
                         }
                     })
-                    .catch((error) => {})
+                    .catch((error) => {
+                        setLoadingButton(false)
+                    })
             }
         },
     })
@@ -191,45 +240,52 @@ export default function EmployeeAdmin() {
         setOpen(true)
         setIsAction(1)
     }
+    const handleClickOpenAddTeam = () => {
+        setOpenTeam(true)
+        setIsAction(1)
+    }
+    console.log('err', formik.values, formik.errors)
+
     const handleClickOpenUpdate = (data) => {
         setOpen(true)
         setIsAction(2)
         console.log('data', data)
         formik.setValues({
-            employeeId: data.employeeId,
-            managerId: data.managerId,
-            name: data.name,
-            address: data.address,
+            id: data.id,
+            username: data.email,
+            password: '********',
+            firstName: data.firstName,
+            lastName: data.lastName,
             gender: data.gender,
-            email: data.email,
+            address: data.address,
             phoneNumber: data.phoneNumber,
-            status: data.status,
-            hireDate: data.hireDate,
-            avatar: data.avatar,
-            timeOffRemain: data.timeOffRemain,
-            employeesClassification: data.employeesClassification,
+            roleID: data.roleId,
+            departmentID: data.departmentId,
         })
     }
 
     const clickOpenFalse = (event) => {
         setOpen(false)
         setIsAction(0)
+
         formik.setTouched({})
         formik.setErrors({})
         formik.setValues({
-            employeeId: '',
-            managerId: '',
-            name: '',
-            address: '',
+            id: '',
+            username: '',
+            password: '',
+            firstName: '',
+            lastName: '',
             gender: '',
-            email: '',
+            address: '',
             phoneNumber: '',
-            status: '',
-            hireDate: '',
-            avatar: '',
-            timeOffRemain: '',
-            employeesClassification: '',
+            roleID: '',
+            departmentID: '',
         })
+    }
+    const clickOpenFalseTeam = (event) => {
+        setOpenTeam(false)
+        setIsAction(0)
     }
     const handleClickOpenConfirm = (data) => {
         setOpenConfirm(true)
@@ -241,11 +297,26 @@ export default function EmployeeAdmin() {
     const handleClickSave = () => {
         setOpen(false)
     }
+    const handleAddNewUserTeam = () => {
+        const newArrayList = [...arrTeam]
+        const newDataList = { id: arrTeam.length + 1, email: '', team: [{ name: '', role: '' }] }
+        newArrayList.push(newDataList)
+        setArrTeam(newArrayList)
+    }
+    const handleDeleteNewUserTeam = (data) => {
+        if (arrTeam.length > 1) {
+            const newArrayList = [...arrTeam]
+            newArrayList.splice(data, 1)
+            setArrTeam(newArrayList)
+        }
+    }
     const handleDelete = () => {
+        setLoadingButton(true)
         dispatch(DeleteEmployeeAsyncApi(idDelete))
             .then((response) => {
                 if (response.meta.requestStatus == 'fulfilled') {
                     setOpenConfirm(false)
+                    setLoadingButton(false)
                     setIsAction(0)
                     showSnackbar({
                         severity: 'success',
@@ -254,76 +325,87 @@ export default function EmployeeAdmin() {
                     dispatch(getEmployeeAsyncApi())
                 }
             })
-            .catch((error) => {})
+            .catch((error) => {
+                setLoadingButton(false)
+            })
     }
     const viewModalContent = (
         <Fragment>
             <form onSubmit={formik.handleSubmit}>
-                <div className="grid grid-cols-2 gap-5 py-4 px-8 mb-5 lg:my-0">
-                    <div className={`my-2   ${isAction == 2 ? '' : 'hidden'}`}>
+                <div className=" gap-5 py-4 px-8 mb-5 lg:my-0">
+                    <div className={`my-2   `}>
                         <TextField
                             id="outlined-basic"
                             size="small"
-                            error={formik.touched.employeeId && formik.errors.employeeId ? true : undefined}
-                            className={`w-full hidden  ${isAction == 2 ? '' : ''}`}
-                            value={formik.values.employeeId}
-                            name="employeeId"
-                            label="Id"
-                            variant="outlined"
-                            disabled
-                        />
-                    </div>
-                    <div className="my-2">
-                        <TextField
-                            id="outlined-basic"
-                            size="small"
-                            error={formik.touched.email && formik.errors.email ? true : undefined}
-                            className="w-full"
-                            value={formik.values.email}
-                            name="email"
+                            error={formik.touched.username && formik.errors.username ? true : undefined}
+                            className={`w-full `}
+                            value={formik.values.username}
+                            name="username"
+                            label="Username"
                             onChange={formik.handleChange}
                             onBlur={formik.handleBlur}
-                            label="Email"
                             variant="outlined"
                         />
-                        {formik.errors.email && formik.touched.email && (
-                            <div className="text mt-1 text-red-600 font-semibold">{formik.errors.email}</div>
+                        {formik.errors.username && formik.touched.username && (
+                            <div className="text mt-1 text-red-600 font-semibold">{formik.errors.username}</div>
                         )}
                     </div>
                     <div className="my-2">
                         <TextField
                             id="outlined-basic"
                             size="small"
-                            error={formik.touched.name && formik.errors.name ? true : undefined}
+                            type="password"
+                            disabled={isAction == 2 ? true : false}
+                            error={formik.touched.password && formik.errors.password ? true : undefined}
                             className="w-full"
-                            value={formik.values.name}
-                            name="name"
+                            value={formik.values.password}
+                            name="password"
                             onChange={formik.handleChange}
                             onBlur={formik.handleBlur}
-                            label="Name"
+                            label="password"
                             variant="outlined"
                         />
-                        {formik.errors.name && formik.touched.name && (
-                            <div className="text mt-1 text-red-600 font-semibold">{formik.errors.name}</div>
+                        {formik.errors.password && formik.touched.password && (
+                            <div className="text mt-1 text-red-600 font-semibold">{formik.errors.password}</div>
                         )}
                     </div>
-                    <div className="my-2">
-                        <TextField
-                            id="outlined-basic"
-                            size="small"
-                            error={formik.touched.managerId && formik.errors.managerId ? true : undefined}
-                            className="w-full"
-                            value={formik.values.managerId}
-                            name="managerId"
-                            onChange={formik.handleChange}
-                            onBlur={formik.handleBlur}
-                            label="Manager"
-                            variant="outlined"
-                        />
-                        {formik.errors.managerId && formik.touched.managerId && (
-                            <div className="text mt-1 text-red-600 font-semibold">{formik.errors.managerId}</div>
-                        )}
+                    <div className="grid grid-cols-2 gap-2 my-2">
+                        <div>
+                            <TextField
+                                id="outlined-basic"
+                                size="small"
+                                error={formik.touched.firstName && formik.errors.firstName ? true : undefined}
+                                className="w-full"
+                                value={formik.values.firstName}
+                                name="firstName"
+                                onChange={formik.handleChange}
+                                onBlur={formik.handleBlur}
+                                label="First Name"
+                                variant="outlined"
+                            />
+                            {formik.errors.firstName && formik.touched.firstName && (
+                                <div className="text mt-1 text-red-600 font-semibold">{formik.errors.firstName}</div>
+                            )}
+                        </div>
+                        <div>
+                            <TextField
+                                id="outlined-basic"
+                                size="small"
+                                error={formik.touched.lastName && formik.errors.lastName ? true : undefined}
+                                className="w-full"
+                                value={formik.values.lastName}
+                                name="lastName"
+                                onChange={formik.handleChange}
+                                onBlur={formik.handleBlur}
+                                label="Last Name"
+                                variant="outlined"
+                            />
+                            {formik.errors.lastName && formik.touched.lastName && (
+                                <div className="text mt-1 text-red-600 font-semibold">{formik.errors.lastName}</div>
+                            )}
+                        </div>
                     </div>
+
                     <div className="my-2">
                         <TextField
                             id="outlined-basic"
@@ -342,18 +424,29 @@ export default function EmployeeAdmin() {
                         )}
                     </div>
                     <div className="my-2">
-                        <TextField
-                            id="outlined-basic"
-                            size="small"
-                            error={formik.touched.gender && formik.errors.gender ? true : undefined}
-                            className="w-full"
-                            value={formik.values.gender}
-                            name="gender"
-                            onChange={formik.handleChange}
-                            onBlur={formik.handleBlur}
-                            label="Gender"
-                            variant="outlined"
-                        />
+                        <FormControl>
+                            <FormLabel id="demo-radio-buttons-group-label">Gender</FormLabel>
+                            <RadioGroup
+                                aria-labelledby="demo-radio-buttons-group-label"
+                                defaultValue="female"
+                                error={formik.touched.gender && formik.errors.gender ? true : undefined}
+                                className="w-full"
+                                value={formik.values.gender}
+                                name="gender"
+                                onChange={formik.handleChange}
+                                onBlur={formik.handleBlur}
+                            >
+                                <Grid container spacing={1} alignItems="center">
+                                    <Grid item>
+                                        <FormControlLabel value={true} control={<Radio />} label="Female" />
+                                    </Grid>
+                                    <Grid item>
+                                        <FormControlLabel value={false} control={<Radio />} label="Male" />
+                                    </Grid>
+                                </Grid>
+                            </RadioGroup>
+                        </FormControl>
+
                         {formik.errors.gender && formik.touched.gender && (
                             <div className="text mt-1 text-red-600 font-semibold">{formik.errors.gender}</div>
                         )}
@@ -376,54 +469,65 @@ export default function EmployeeAdmin() {
                         )}
                     </div>
                     <div className="my-2">
-                        <TextField
-                            id="outlined-basic"
-                            size="small"
-                            error={formik.touched.status && formik.errors.status ? true : undefined}
-                            className="w-full"
-                            value={formik.values.status}
-                            name="status"
-                            onChange={formik.handleChange}
-                            onBlur={formik.handleBlur}
-                            label="Status"
-                            variant="outlined"
-                        />
-                        {formik.errors.status && formik.touched.status && (
-                            <div className="text mt-1 text-red-600 font-semibold">{formik.errors.status}</div>
+                        <FormControl fullWidth>
+                            <InputLabel size="small" id="demo-simple-select-label">
+                                role
+                            </InputLabel>
+                            <Select
+                                id="outlined-basic"
+                                size="small"
+                                error={formik.touched.roleID && formik.errors.roleID ? true : undefined}
+                                className="w-full"
+                                value={formik.values.roleID}
+                                name="roleID"
+                                onChange={formik.handleChange}
+                                onBlur={formik.handleBlur}
+                                label="role"
+                                variant="outlined"
+                            >
+                                {RoleList.map((item, index) => {
+                                    return (
+                                        <MenuItem key={index} value={item.id}>
+                                            {item.name}
+                                        </MenuItem>
+                                    )
+                                })}
+                            </Select>
+                        </FormControl>
+                        {formik.errors.roleID && formik.touched.roleID && (
+                            <div className="text mt-1 text-red-600 font-semibold">{formik.errors.roleID}</div>
                         )}
                     </div>
-                    {/* <div className="my-2">
-                        <TextField
-                            id="outlined-basic"
-                            size="small"
-                            error={formik.touched.hireDate && formik.errors.hireDate ? true : undefined}
-                            className="w-full"
-                            value={formik.values.hireDate}
-                            name="hireDate"
-                            onChange={formik.handleChange}
-                            onBlur={formik.handleBlur}
-                            label="Hire Date"
-                            variant="outlined"
-                        />
-                        {formik.errors.hireDate && formik.touched.hireDate && (
-                            <div className="text mt-1 text-red-600 font-semibold">{formik.errors.hireDate}</div>
-                        )}
-                    </div> */}
+
                     <div className="my-2">
-                        <TextField
-                            id="outlined-basic"
-                            size="small"
-                            error={formik.touched.timeOffRemain && formik.errors.timeOffRemain ? true : undefined}
-                            className="w-full"
-                            value={formik.values.timeOffRemain}
-                            name="timeOffRemain"
-                            onChange={formik.handleChange}
-                            onBlur={formik.handleBlur}
-                            label="Time Of Remain"
-                            variant="outlined"
-                        />
-                        {formik.errors.timeOffRemain && formik.touched.timeOffRemain && (
-                            <div className="text mt-1 text-red-600 font-semibold">{formik.errors.timeOffRemain}</div>
+                        <FormControl fullWidth>
+                            <InputLabel size="small" id="demo-simple-select-label">
+                                Department
+                            </InputLabel>
+                            <Select
+                                id="outlined-basic"
+                                size="small"
+                                disabled={formik.values.roleID == 'c43450f8-4d7b-11ee-be56-0242ac120002' ? false : true}
+                                error={formik.touched.departmentID && formik.errors.departmentID ? true : undefined}
+                                className="w-full"
+                                value={formik.values.departmentID}
+                                name="departmentID"
+                                onChange={formik.handleChange}
+                                onBlur={formik.handleBlur}
+                                label="Department"
+                                variant="outlined"
+                            >
+                                {DepartmentList.map((item, index) => {
+                                    return (
+                                        <MenuItem key={index} value={item.id}>
+                                            {item.name}
+                                        </MenuItem>
+                                    )
+                                })}
+                            </Select>
+                        </FormControl>
+                        {formik.errors.departmentID && formik.touched.departmentID && (
+                            <div className="text mt-1 text-red-600 font-semibold">{formik.errors.departmentID}</div>
                         )}
                     </div>
                 </div>
@@ -433,15 +537,150 @@ export default function EmployeeAdmin() {
                         <Button variant="contained" color="inherit" autoFocus onClick={handleClickSave}>
                             Cancel
                         </Button>
-                        <Button type="submit" variant="contained" color="primary" autoFocus>
+                        <LoadingButton
+                            startIcon={<AddIcon />}
+                            type="submit"
+                            loading={loadingButton}
+                            loadingPosition="start"
+                            color="info"
+                            variant="contained"
+                            sx={{
+                                textAlign: 'center',
+                            }}
+                            autoFocus
+                        >
                             Save changes
-                        </Button>
+                        </LoadingButton>
                     </div>
                 </DialogActions>
             </form>
         </Fragment>
     )
-
+    const viewModalTeamContent = (
+        <Fragment>
+            <div className=" py-4 px-8 mb-5 lg:my-0">
+                {arrTeam.map((item, index) => {
+                    return (
+                        <Fragment key={index}>
+                            <div className="flex gap-5 items-center">
+                                <FormControl className="w-96">
+                                    <InputLabel size="small" id="demo-simple-select-label">
+                                        Email
+                                    </InputLabel>
+                                    <Select
+                                        labelId="demo-simple-select-label"
+                                        size="small"
+                                        className="w-full"
+                                        value={item.email}
+                                        name="email"
+                                        onChange={(e) => {
+                                            const updatedDataList = [...arrTeam]
+                                            updatedDataList[index].email = e.target.value
+                                            setArrTeam(updatedDataList)
+                                        }}
+                                        label="Email"
+                                    >
+                                        <MenuItem value={10}>Ten</MenuItem>
+                                        <MenuItem value={20}>Twenty</MenuItem>
+                                        <MenuItem value={30}>Thirty</MenuItem>
+                                    </Select>
+                                </FormControl>
+                                {item.team.map((data, index1) => {
+                                    return (
+                                        <Fragment key={index1}>
+                                            <FormControl className="w-40">
+                                                <InputLabel size="small" id="demo-simple-select-label">
+                                                    Role
+                                                </InputLabel>
+                                                <Select
+                                                    labelId="demo-simple-select-label"
+                                                    size="small"
+                                                    className="w-full"
+                                                    value={data.role}
+                                                    onChange={(e) => {
+                                                        const updatedDataList = [...arrTeam]
+                                                        updatedDataList[index].team[index1].role = e.target.value
+                                                        setArrTeam(updatedDataList)
+                                                    }}
+                                                    name="role"
+                                                    label="Role"
+                                                >
+                                                    <MenuItem value={10}>Ten</MenuItem>
+                                                    <MenuItem value={20}>Twenty</MenuItem>
+                                                    <MenuItem value={30}>Thirty</MenuItem>
+                                                </Select>
+                                            </FormControl>
+                                            <FormControl className="w-72">
+                                                <InputLabel size="small" id="demo-simple-select-label">
+                                                    Team
+                                                </InputLabel>
+                                                <Select
+                                                    labelId="demo-simple-select-label"
+                                                    size="small"
+                                                    className="w-full"
+                                                    value={data.name}
+                                                    name="team"
+                                                    onChange={(e) => {
+                                                        const updatedDataList = [...arrTeam]
+                                                        updatedDataList[index].team[index1].name = e.target.value
+                                                        setArrTeam(updatedDataList)
+                                                    }}
+                                                    label="Team"
+                                                >
+                                                    <MenuItem value={10}>Ten</MenuItem>
+                                                    <MenuItem value={20}>Twenty</MenuItem>
+                                                    <MenuItem value={30}>Thirty</MenuItem>
+                                                </Select>
+                                            </FormControl>
+                                        </Fragment>
+                                    )
+                                })}
+                                <button
+                                    onClick={(e) => handleDeleteNewUserTeam(index)}
+                                    className={arrTeam.length < 2 ? 'text-gray-400 cursor-default' : 'text-red-400'}
+                                >
+                                    <DeleteIcon />
+                                </button>
+                            </div>
+                            <hr className="my-6" />
+                        </Fragment>
+                    )
+                })}
+                <button onClick={handleAddNewUserTeam} className="flex gap-2 hover:underline cursor-pointer">
+                    <AddIcon className="text-blue-400" /> <h2 className="text-blue-400">Add new User</h2>{' '}
+                </button>
+                <hr className="my-6" />
+                <div className="grid text-sm">
+                    <div className="">
+                        <strong className="mx-1">Team Member</strong>
+                        is a person who you want to be monitored
+                    </div>
+                    <div className="">
+                        <strong className="mx-1">Team Manager</strong>
+                        Manage employees' working time and holidays
+                    </div>
+                    <div className="">
+                        <strong className="mx-1">Team Manager HR</strong>
+                        can see their team members' tracking data in website
+                    </div>
+                    <div className="">
+                        <strong className="mx-1">Admin</strong>
+                        has the control of everything from adding a member, creating a team, seeing the tracking data
+                    </div>
+                </div>
+            </div>
+            <DialogActions>
+                <div className="flex gap-5">
+                    <Button variant="contained" color="inherit" autoFocus onClick={handleClickSave}>
+                        Cancel
+                    </Button>
+                    <Button type="submit" variant="contained" color="primary" autoFocus>
+                        Save changes
+                    </Button>
+                </div>
+            </DialogActions>
+        </Fragment>
+    )
     const createRows = () => {
         return EmployeeList.map((item, index) => ({
             ...item,
@@ -451,13 +690,12 @@ export default function EmployeeAdmin() {
                     {item.email}
                 </button>
             ),
-            address: item.address.length > 20 ? item.address.slice(0, 35) + '...' : item.address,
+            // address: item.address.length > 20 ? item.address.slice(0, 35) + '...' : item.address,
             info: (
                 <div className="flex gap-2 items-center ">
                     {' '}
                     {/* Added the class 'align-center' for centering */}
-                    <Avatar src={item.avatar} alt={item.name} style={{ width: 40, height: 40 }} />
-                    <p className="font-bold">{item.name}</p>
+                    <p className="font-bold">{item.firstName + ' ' + item.lastName}</p>
                 </div>
             ),
             status: <button className="bg-green-300 text-green-600 font-semibold py-1 px-2 rounded-xl">Active</button>,
@@ -491,12 +729,28 @@ export default function EmployeeAdmin() {
                 viewTitle={isAction == 1 ? 'Add Employee' : isAction == 2 ? 'Update Employee' : ''}
                 viewContent={viewModalContent}
             />
+            <PopupData
+                size={'md'}
+                open={openTeam}
+                clickOpenFalse={clickOpenFalseTeam}
+                viewTitle={isAction == 1 ? 'Add Member to the team' : isAction == 2 ? 'Update Member to the team' : ''}
+                viewContent={viewModalTeamContent}
+            />
             <div className="sm:ml-64 pt-20 h-screen bg-gray-50">
                 <div className="px-12 py-6">
                     <h2 className="font-bold text-3xl mb-4"> Employee List </h2>
                     <div className="w-full mb-8 flex font-semibold items-center">
                         <IconBreadcrumbs data={dataBreadcrumbs} />
-                        <div className="ml-auto uppercase">
+                        <div className="ml-auto flex gap-5 uppercase">
+                            {/* <Button
+                                onClick={handleClickOpenAddTeam}
+                                startIcon={<AddIcon />}
+                                variant="contained"
+                                color="success"
+                                className=""
+                            >
+                                Add Member to the Team
+                            </Button> */}
                             <Button
                                 onClick={handleClickOpenAdd}
                                 startIcon={<AddIcon />}
@@ -504,16 +758,14 @@ export default function EmployeeAdmin() {
                                 color="primary"
                                 className=""
                             >
-                                Add New
+                                Add New Employee
                             </Button>
                         </div>
                     </div>
                     <div className="bg-white p-4">
                         <div className="mb-5 flex items-center">
                             <Search parentCallback={callbackSearch} />
-                            <div className="ml-auto md:mr-16 mr-4">
-                                <FilterListIcon className="" />
-                            </div>
+                            <div className="ml-auto md:mr-16 mr-4"></div>
                         </div>
                         <div>
                             <TableData

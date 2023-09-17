@@ -74,8 +74,8 @@ export default function TimeEntries() {
         ]
 
         return (
-            TimeEntriesDetail &&
-            TimeEntriesDetail.map((item, index) => ({
+            data &&
+            data.map((item, index) => ({
                 ...item,
                 number: index + 1,
                 date: formatDate(item.date),

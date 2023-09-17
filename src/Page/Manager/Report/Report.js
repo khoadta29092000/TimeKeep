@@ -6,11 +6,13 @@ import Navbar from '../Navbar'
 //Icon
 import TodayIcon from '@mui/icons-material/Today'
 import EventNoteIcon from '@mui/icons-material/EventNote'
+import AccessTimeIcon from '@mui/icons-material/AccessTime'
 
 //Component
 import TabsData from '../../../Components/Tabs'
 import DailyAttendance from './DailyAttendance'
 import MonthAttendance from './MonthAttendance'
+import MonthlyInOutAttendance from './MonthlyInOutAttendance'
 
 export default function Report() {
     const [search, setSearch] = useState('')
@@ -27,6 +29,11 @@ export default function Report() {
             label: 'Month Attendance',
             icon: <EventNoteIcon />,
             view: <MonthAttendance />,
+        },
+        {
+            label: 'Monthly In Out',
+            icon: <AccessTimeIcon />,
+            view: <MonthlyInOutAttendance />,
         },
     ]
     return (

@@ -5,7 +5,7 @@ import TextField from '@mui/material/TextField'
 import Stack from '@mui/material/Stack'
 
 export default function MultiSelectData(props) {
-    const { data, defaultValueData, onChange, placeholder } = props
+    const { disabled, data, defaultValueData, onChange, placeholder } = props
 
     return (
         <Stack spacing={3}>
@@ -13,6 +13,7 @@ export default function MultiSelectData(props) {
                 multiple
                 size="small"
                 options={data}
+                disabled={disabled}
                 getOptionLabel={(option) => option.name}
                 onChange={(event, newValue) => {
                     onChange(newValue)

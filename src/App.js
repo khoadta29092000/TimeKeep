@@ -17,6 +17,13 @@ import RiskEmployeeSettings from './Page/Admin/EmployeeRiskSettings/EmployeeRisk
 import TrackSettings from './Page/Admin/TrackSettings/TrackSettings'
 import Holiday from './Page/Manager/Holiday/Holiday'
 import ApplyLeave from './Page/Employee/ApplyLeave/ApplyLeave'
+import Team from './Page/Admin/Team/Team'
+import Overtime from './Page/Employee/Overtime/Overtime'
+import Worked from './Page/Employee/Worked/Worked'
+import ManageOvertime from './Page/Manager/ManageOvertime/ManageOvertime'
+import ManageWorked from './Page/Manager/ManageWorked/ManageWorked'
+import DashboardEmployee from './Page/Employee/Dashboard/Dashboard'
+import WorkSlot from './Page/Manager/WorkSlot/WorkSlot'
 
 export const history = createBrowserHistory()
 
@@ -25,22 +32,30 @@ function App() {
         <Router history={history}>
             <Switch>
                 <Route path="/" exact component={Login} />
-                {/*Manager*/}
+                {/*Admin*/}
+                <Route path="/Admin/Team" exact component={Team} />
                 <Route path="/Admin/Employee" exact component={EmployeeAdmin} />
-                <Route path="/Admin/RiskEmployeeSettings" exact component={RiskEmployeeSettings} />
+                {/* <Route path="/Admin/RiskEmployeeSettings" exact component={RiskEmployeeSettings} /> */}
                 <Route path="/Admin/TrackSettings" exact component={TrackSettings} />
                 {/*Manager*/}
                 <Route path="/Profile" exact component={Profile} />
-                <Route path="/Employee" exact component={Employee} />
-                <Route path="/Employee/Detail/:id" render={(props) => <EmployeeDetail {...props} />} />
-                <Route path="/RiskEmployee" exact component={RiskEmployee} />
-                <Route path="/TimeSheet" exact component={TimeSheet} />
-                <Route path="/Report" exact component={Report} />
-                <Route path="/ManageLeave" exact component={ManageLeave} />
-                <Route path="/ManageHoliday" exact component={Holiday} />
-                {/*Manager*/}
-                <Route path="/ApplyLeave" exact component={ApplyLeave} />
+                <Route path="/Manager/Employee" exact component={Employee} />
+                <Route path="/Manager/Employee/Detail/:id" render={(props) => <EmployeeDetail {...props} />} />
+                <Route path="/Manager/RiskEmployee" exact component={RiskEmployee} />
+                <Route path="/Manager/TimeSheet" exact component={TimeSheet} />
+                <Route path="/Manager/Report" exact component={Report} />
+                {/*HR*/}
+                <Route path="/Hr/Workslot" exact component={WorkSlot} />
+                <Route path="/Hr/ManageLeave" exact component={ManageLeave} />
+                <Route path="/Hr/ManageHoliday" exact component={Holiday} />
+                <Route path="/Hr/ManageOvertime" exact component={ManageOvertime} />
+                <Route path="/Hr/ManageWorked" exact component={ManageWorked} />
+                {/*Employee*/}
 
+                <Route path="/Employee/Dashboard" exact component={DashboardEmployee} />
+                <Route path="/Employee/ApplyLeave" exact component={ApplyLeave} />
+                <Route path="/Employee/Overtime" exact component={Overtime} />
+                <Route path="/Employee/Worked" exact component={Worked} />
                 <Route component={ErrorPage} />
             </Switch>
         </Router>

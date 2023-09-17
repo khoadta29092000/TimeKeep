@@ -4,6 +4,7 @@ import GetHolidayApi, { GetHolidayByIdApi, DeleteHolidayApi, PostHolidayApi, Put
 const initialState = {
     HolidayList: [],
     HolidayDetail: {},
+    loading: false,
 }
 
 const authSlice = createSlice({
@@ -17,11 +18,16 @@ const authSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
-            .addCase(getHolidayAsyncApi.pending, (state) => {})
+            .addCase(getHolidayAsyncApi.pending, (state) => {
+                state.loading = true
+            })
             .addCase(getHolidayAsyncApi.fulfilled, (state, action) => {
                 state.HolidayList = action.payload
+                state.loading = false
             })
-            .addCase(getHolidayAsyncApi.rejected, (state, action) => {})
+            .addCase(getHolidayAsyncApi.rejected, (state, action) => {
+                state.loading = false
+            })
         builder
             .addCase(getHolidayByIdAsyncApi.pending, (state) => {})
             .addCase(getHolidayByIdAsyncApi.fulfilled, (state, action) => {
@@ -49,7 +55,7 @@ export const HolidayAction = authSlice.actions
 export const getHolidayAsyncApi = createAsyncThunk('HolidayReducer/getAsyncApi', async () => {
     try {
         const response = await GetHolidayApi()
-        return response
+        return response.data
     } catch (error) {
         const json = error.response.data
         const errors = json[''].errors

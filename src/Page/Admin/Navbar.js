@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import BadgeIcon from '@mui/icons-material/Badge'
 import ContactMailIcon from '@mui/icons-material/ContactMail'
+import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined'
+import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined'
 import DashboardIcon from '@mui/icons-material/Dashboard'
 import LogoutIcon from '@mui/icons-material/Logout'
 import { Avatar, Menu, MenuItem, ListItemIcon, Divider, IconButton, Tooltip } from '@mui/material'
@@ -8,14 +10,69 @@ import Settings from '@mui/icons-material/Settings'
 import { Link, NavLink } from 'react-router-dom'
 import TuneIcon from '@mui/icons-material/Tune'
 import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined'
-
-export default function Navbar() {
+import { useHistory } from 'react-router-dom/cjs/react-router-dom.min'
+import AccountBoxIcon from '@mui/icons-material/AccountBox'
+import KeyIcon from '@mui/icons-material/Key'
+import General from '../Manager/EmployeeDetail/General'
+import ChangePassword from '../Manager/Profile/ChangePassword'
+import TabsData from '../../Components/Tabs'
+import PopupData from '../../Components/Popup'
+const tabsData = [
+    {
+        label: 'General',
+        icon: <AccountBoxIcon />,
+        view: <General />,
+    },
+    {
+        label: 'Change Password',
+        icon: <KeyIcon />,
+        view: <ChangePassword />,
+    },
+    // {
+    //     label: 'Time Entries',
+    //     icon: <EventNoteIcon />,
+    //     view: <TimeEntries />,
+    // },
+]
+export default function NavbarAdmin() {
+    const [openModal, setOpenModal] = useState(false)
+    const clickOpenFalse = (event) => {
+        setOpenModal(false)
+    }
+    const handleClickOpenAdd = () => {
+        setOpenModal(true)
+    }
     const [anchorEl, setAnchorEl] = useState(null)
     const [isModalOpen, setIsModalOpen] = useState(false)
     const open = Boolean(anchorEl)
-
-    useEffect(() => {}, [])
-
+    const userStringRole = localStorage.getItem('role')
+    const role = JSON.parse(userStringRole)
+    const userStringAvatar = localStorage.getItem('avatar')
+    const avatar = JSON.parse(userStringAvatar)
+    const userStringEmployeeName = localStorage.getItem('employeeName')
+    const employeeName = JSON.parse(userStringEmployeeName)
+    const userString = localStorage.getItem('role')
+    const userObject = JSON.parse(userString)
+    useEffect(() => {
+        // if (userObject && userObject == 'Manager') {
+        //     history.push('/Manager/Employee')
+        // } else if (userObject && userObject == 'User') {
+        //     history.push('/Employee/Dashboard')
+        // } else if (userObject && userObject == 'HR') {
+        //     history.push('/Hr/ManageLeave')
+        // } else if (userObject && userObject == 'Admin') {
+        // } else {
+        //     history.push('')
+        // }
+    }, [])
+    let history = useHistory()
+    const handleCloseOut = () => {
+        setAnchorEl(null)
+        localStorage.removeItem('user')
+        localStorage.removeItem('role')
+        localStorage.removeItem('employeeId')
+        history.push('/')
+    }
     const handleClick = (event) => {
         setAnchorEl(event.currentTarget)
     }
@@ -64,13 +121,22 @@ export default function Navbar() {
                         <span className="sr-only">Close menu</span>
                     </button>
                     <ul className="space-y-2 font-medium cursor-pointer">
-                        <li className="cursor-pointer p-2">
+                        {/* <li className="cursor-pointer p-2">
                             <Link
                                 to="/"
                                 className="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-blue-100 dark:hover:bg-gray-700 group"
                             >
                                 <DashboardIcon className="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 " />
                                 <span className="ml-3">Dashboard</span>
+                            </Link>
+                        </li> */}
+                        <li className="cursor-pointer p-2">
+                            <Link
+                                to="/Admin/Team"
+                                className="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-blue-100 dark:hover:bg-gray-700 group"
+                            >
+                                <GroupOutlinedIcon className="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 " />
+                                <span className="flex-1 ml-3 whitespace-nowrap">Department</span>
                             </Link>
                         </li>
                         <li className="cursor-pointer p-2">
@@ -82,7 +148,7 @@ export default function Navbar() {
                                 <span className="flex-1 ml-3 whitespace-nowrap">Employee</span>
                             </Link>
                         </li>
-                        <li className="cursor-pointer p-2">
+                        {/* <li className="cursor-pointer p-2">
                             <Link
                                 to="/Admin/RiskEmployeeSettings"
                                 className="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-blue-100 dark:hover:bg-gray-700 group"
@@ -90,7 +156,7 @@ export default function Navbar() {
                                 <NotificationsNoneOutlinedIcon className="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 " />
                                 <span className="flex-1 ml-3 whitespace-nowrap">Risk Settings</span>
                             </Link>
-                        </li>
+                        </li> */}
                         <li className="cursor-pointer p-2">
                             <Link
                                 to="/Admin/TrackSettings"
@@ -100,6 +166,15 @@ export default function Navbar() {
                                 <span className="flex-1 ml-3 whitespace-nowrap">Track Settings</span>
                             </Link>
                         </li>
+                        {/* <li className="cursor-pointer p-2">
+                            <Link
+                                to="/Admin/LeaveSettings"
+                                className="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-blue-100 dark:hover:bg-gray-700 group"
+                            >
+                                <AutoAwesomeOutlinedIcon className="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 " />
+                                <span className="flex-1 ml-3 whitespace-nowrap">Leave Settings</span>
+                            </Link>
+                        </li> */}
                         <li className="cursor-pointer p-2">
                             <Link
                                 to="/"
@@ -114,9 +189,16 @@ export default function Navbar() {
             </div>
         </>
     )
-
+    let viewModalContent = <TabsData data={tabsData} />
     return (
         <div>
+            <PopupData
+                size={'lg'}
+                viewTitle="Profile"
+                open={openModal}
+                clickOpenFalse={clickOpenFalse}
+                viewContent={viewModalContent}
+            />
             {isModalOpen && MobiUi}
             <nav className="fixed top-0 z-50 w-full bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
                 <div className="px-3 py-3 lg:px-5 lg:pl-3">
@@ -196,7 +278,7 @@ export default function Navbar() {
                                             aria-haspopup="true"
                                             aria-expanded={open ? 'true' : undefined}
                                         >
-                                            <Avatar sx={{ width: 48, height: 48 }}>M</Avatar>
+                                            <Avatar sx={{ width: 48, height: 48 }}>{avatar && avatar.charAt(0)}</Avatar>
                                         </IconButton>
                                     </Tooltip>
                                 </div>
@@ -236,22 +318,20 @@ export default function Navbar() {
                                     anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
                                 >
                                     <div className="grid grid-rows-2 px-5 py-2 cursor-default">
-                                        <p>Đặng Hoàng Việt</p>
-                                        <strong>VietDH@gmail.com</strong>
+                                        <p>{employeeName && employeeName}</p>
+                                        <strong>({role && role})</strong>
                                     </div>
                                     <hr className="mb-2" />
 
-                                    <MenuItem onClick={handleClose}>
-                                        <Avatar /> Profile
+                                    <MenuItem>
+                                        <NavLink to="/Profile" className="flex items-center">
+                                            {' '}
+                                            <Avatar /> Profile
+                                        </NavLink>
                                     </MenuItem>
                                     <Divider />
-                                    <MenuItem onClick={handleClose}>
-                                        <ListItemIcon>
-                                            <Settings fontSize="small" />
-                                        </ListItemIcon>
-                                        Settings
-                                    </MenuItem>
-                                    <MenuItem onClick={handleClose}>
+
+                                    <MenuItem onClick={handleCloseOut}>
                                         <ListItemIcon>
                                             <LogoutIcon fontSize="small" />
                                         </ListItemIcon>
@@ -272,26 +352,17 @@ export default function Navbar() {
                 <div className="h-full px-3 pb-4 overflow-y-auto bg-white dark:bg-gray-800">
                     <ul className="space-y-2 font-medium">
                         <li className="m-4">
-                            <NavLink
-                                activeStyle={{
-                                    background: '#dbeafe',
-                                    color: '#2563eb',
-                                }}
-                                to="/Profile"
-                                className="flex gap-5 bg-gray-100 py-3 px-4 rounded-xl"
+                            <button
+                                onClick={handleClickOpenAdd}
+                                className="flex gap-5 bg-gray-100 py-3 px-4 rounded-xl w-full"
                             >
-                                <Avatar
-                                    className="my-auto"
-                                    alt="Remy Sharp"
-                                    src="https://khoinguonsangtao.vn/wp-content/uploads/2022/10/anh-vo-dien-uong-tra-sua-cute.jpg"
-                                />
-                                <div className="text-center">
-                                    <strong>Đặng Hoàng Việt</strong>
-                                    <div className="mx-auto text-center">(Admin)</div>
+                                <div className="w-full text-center">
+                                    <strong>{employeeName && employeeName}</strong>
+                                    <div className="mx-auto text-center">({role && role})</div>
                                 </div>
-                            </NavLink>
+                            </button>
                         </li>
-                        <li className="cursor-pointer text-center mx-auto justify-center items-center">
+                        {/* <li className="cursor-pointer text-center mx-auto justify-center items-center">
                             <Link
                                 to="/"
                                 className="flex items-center gap-2 p-2 text-gray-900 rounded-lg dark:text-white hover:bg-blue-100 dark:hover:bg-gray-700 group"
@@ -299,6 +370,18 @@ export default function Navbar() {
                                 <DashboardIcon className=" ml-7 flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 " />
                                 <span className="ml-3 text-lg">Dashboard</span>
                             </Link>
+                        </li> */}
+                        <li className="cursor-pointer text-center mx-auto justify-center items-center">
+                            <NavLink
+                                to="/Admin/Team"
+                                className="flex items-center gap-2 p-2 text-gray-900 rounded-lg dark:text-white hover:bg-blue-100 dark:hover:bg-gray-700 group"
+                                activeStyle={{
+                                    background: '#dbeafe',
+                                }}
+                            >
+                                <GroupOutlinedIcon className="ml-7 flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 " />
+                                <span className="ml-3">Department</span>
+                            </NavLink>
                         </li>
                         <li className="cursor-pointer text-center mx-auto justify-center items-center">
                             <NavLink
@@ -312,7 +395,7 @@ export default function Navbar() {
                                 <span className="ml-3">Employee</span>
                             </NavLink>
                         </li>
-                        <li className="cursor-pointer text-center mx-auto justify-center items-center">
+                        {/* <li className="cursor-pointer text-center mx-auto justify-center items-center">
                             <NavLink
                                 to="/Admin/RiskEmployeeSettings"
                                 className="flex items-center gap-2 p-2 text-gray-900 rounded-lg dark:text-white hover:bg-blue-100 dark:hover:bg-gray-700 group"
@@ -323,7 +406,7 @@ export default function Navbar() {
                                 <NotificationsNoneOutlinedIcon className="ml-7 flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 " />
                                 <span className="ml-3">Risk Settings</span>
                             </NavLink>
-                        </li>
+                        </li> */}
                         <li className="cursor-pointer text-center mx-auto justify-center items-center">
                             <NavLink
                                 to="/Admin/TrackSettings"
@@ -336,6 +419,18 @@ export default function Navbar() {
                                 <span className="ml-3">Track Settings</span>
                             </NavLink>
                         </li>
+                        {/* <li className="cursor-pointer text-center mx-auto justify-center items-center">
+                            <NavLink
+                                to="/Admin/LeaveSettings"
+                                className="flex items-center gap-2 p-2 text-gray-900 rounded-lg dark:text-white hover:bg-blue-100 dark:hover:bg-gray-700 group"
+                                activeStyle={{
+                                    background: '#dbeafe',
+                                }}
+                            >
+                                <AutoAwesomeOutlinedIcon className="rotate-90 ml-7 flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 " />
+                                <span className="ml-3">Leave Settings</span>
+                            </NavLink>
+                        </li> */}
                     </ul>
                 </div>
             </aside>

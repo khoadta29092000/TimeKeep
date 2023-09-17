@@ -4,7 +4,7 @@ const API_URL = process.env.REACT_APP_API_URL
 
 const GetHolidayApi = async () => {
     try {
-        const response = await axios.get(`${API_URL}/Holidays`)
+        const response = await axios.get(`${API_URL}/Holiday`)
         return response.data
     } catch (error) {
         throw error
@@ -12,7 +12,7 @@ const GetHolidayApi = async () => {
 }
 export const GetHolidayByIdApi = async (id) => {
     try {
-        const response = await axios.get(`${API_URL}/Holidays/${id}`)
+        const response = await axios.get(`${API_URL}/Holiday/${id}`)
         return response.data
     } catch (error) {
         throw error
@@ -20,7 +20,7 @@ export const GetHolidayByIdApi = async (id) => {
 }
 export const PostHolidayApi = async (body) => {
     try {
-        const response = await axios.post(`${API_URL}/Holidays`, body)
+        const response = await axios.post(`${API_URL}/Holiday`, body)
         return response.data
     } catch (error) {
         throw error
@@ -29,16 +29,16 @@ export const PostHolidayApi = async (body) => {
 
 export const PutHolidayApi = async (body) => {
     try {
-        const response = await axios.put(`${API_URL}/Holidays`, body)
+        const response = await axios.put(`${API_URL}/Holiday`, body)
         return response.data
     } catch (error) {
         throw error
     }
 }
 
-export const DeleteHolidayApi = async (id) => {
+export const DeleteHolidayApi = async (body) => {
     try {
-        const response = await axios.delete(`${API_URL}/Holidays/${id}`)
+        const response = await axios.delete(`${API_URL}/Holiday`, body)
         return response.data
     } catch (error) {
         throw error

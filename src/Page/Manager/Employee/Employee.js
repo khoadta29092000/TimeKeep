@@ -22,12 +22,13 @@ import TableData from '../../../Components/Table'
 import IconBreadcrumbs from '../../../Components/Breadcrumbs'
 
 //redux
-import { getEmployeeAsyncApi } from '../../../Redux/Employee/employeeSlice'
+import { getEmployeeAsyncApi, getEmployeeByIdAsyncApi } from '../../../Redux/Employee/employeeSlice'
 
 const columns = [
     { id: 'number', label: 'Number', minWidth: 50, align: 'center' },
     { id: 'email', label: 'Email', minWidth: 200, align: 'left' },
     { id: 'info', label: 'Name', minWidth: 200, align: 'left' },
+    { id: 'departmentName', label: 'Team', minWidth: 250, align: 'left' },
     { id: 'address', label: 'Address', minWidth: 250, align: 'left' },
     { id: 'phoneNumber', label: 'Phone Number', minWidth: 100, align: 'left' },
     { id: 'gender', label: 'Gender', minWidth: 50, align: 'center' },
@@ -52,9 +53,17 @@ export default function Employee() {
     const { EmployeeList } = useSelector((state) => state.employee)
     const dispatch = useDispatch()
     useEffect(() => {
-        dispatch(getEmployeeAsyncApi())
+        const userStringEmployeeName = localStorage.getItem('employeeId')
+        const employeeId = JSON.parse(userStringEmployeeName)
+        dispatch(getEmployeeByIdAsyncApi(employeeId)).then((response) => {
+            if (response.meta.requestStatus == 'fulfilled') {
+                console.log('effect', response)
+                dispatch(getEmployeeAsyncApi({ roleId: '', departmentId: response.payload.departmentId, name: search }))
+            }
+        })
+
         return () => {}
-    }, [])
+    }, [search])
     const handleChangePage = (newPage) => {
         setPage(newPage)
     }
@@ -75,13 +84,12 @@ export default function Employee() {
                     {item.email}
                 </button>
             ),
-            address: item.address.length > 20 ? item.address.slice(0, 35) + '...' : item.address,
+            // address: item.address.length > 20 ? item.address.slice(0, 35) + '...' : item.address,
             info: (
                 <div className="flex gap-2 items-center ">
                     {' '}
                     {/* Added the class 'align-center' for centering */}
-                    <Avatar src={item.avatar} alt={item.name} style={{ width: 40, height: 40 }} />
-                    <p className="font-bold">{item.name}</p>
+                    <p className="font-bold">{item.firstName + ' ' + item.lastName}</p>
                 </div>
             ),
             status: <button className="bg-green-300 text-green-600 font-semibold py-1 px-2 rounded-xl">Active</button>,
@@ -127,9 +135,7 @@ export default function Employee() {
                     <div className="bg-white p-4">
                         <div className="mb-5 flex items-center">
                             <Search parentCallback={callbackSearch} />
-                            <div className="ml-auto md:mr-16 mr-4">
-                                <FilterListIcon className="" />
-                            </div>
+                            <div className="ml-auto md:mr-16 mr-4"></div>
                         </div>
                         <div>
                             <TableData

@@ -1,5 +1,15 @@
 import { parse, format, getDaysInMonth, startOfMonth, addDays } from 'date-fns'
 
+export const FormatDateToTime = (dateObject) => {
+    const currentDate = new Date(dateObject)
+    const hours = currentDate.getHours()
+    const minutes = currentDate.getMinutes()
+
+    // Định dạng thành chuỗi "HH:mm"
+    const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+    return formattedTime
+}
+
 export const calculateDuration = (startTime, endTime) => {
     const clockIn = new Date(`1970-01-01T${startTime}`)
     const clockOut = new Date(`1970-01-01T${endTime}`)
@@ -14,7 +24,16 @@ export const calculateDuration = (startTime, endTime) => {
         .toString()
         .padStart(2, '0')}:${durationSeconds.toString().padStart(2, '0')}`
 }
+export function formatTimeToDate(startDate) {
+    if (!startDate) return null // Bổ sung kiểm tra
 
+    const timeComponents = startDate.split(':')
+    const currentDate = new Date()
+    currentDate.setHours(parseInt(timeComponents[0], 10))
+    currentDate.setMinutes(parseInt(timeComponents[1], 10))
+
+    return currentDate
+}
 export function formatDateToInputValue(startDate) {
     const [year, month, day] = startDate.split('-').map(Number)
     const date = new Date(year, month - 1, day)
@@ -31,7 +50,8 @@ export const getDateRangeArray = (startDate, endDate) => {
     function formatNewDate(date) {
         const day = String(date.getDate()).padStart(2, '0')
         const month = date.toLocaleString('en-US', { month: 'short' })
-        return `${day} ${month}`
+        const year = date.getFullYear()
+        return `${day} ${month}, ${year}`
     }
     while (currentDate <= lastDate) {
         dateRangeArray.push(formatNewDate(currentDate))
@@ -40,7 +60,22 @@ export const getDateRangeArray = (startDate, endDate) => {
 
     return dateRangeArray
 }
+export const calculateTime = (startTime, endTime) => {
+    const [startHour, startMinute] = startTime.split(':').map(Number)
+    const [endHour, endMinute] = endTime.split(':').map(Number)
 
+    // Convert times to minutes
+    const startTimeInMinutes = startHour * 60 + startMinute
+    const endTimeInMinutes = endHour * 60 + endMinute
+
+    // Calculate the time difference in minutes
+    const timeDifferenceInMinutes = endTimeInMinutes - startTimeInMinutes
+
+    // Convert the time difference back to hours and minutes
+    const timeDifferenceHours = Math.floor(timeDifferenceInMinutes / 60)
+    const timeDifferenceMinutes = timeDifferenceInMinutes % 60
+    return timeDifferenceHours + ' hours ' + timeDifferenceMinutes + ' minutes'
+}
 export const calculateDays = (startDate, endDate) => {
     // Chuyển đổi chuỗi ngày thành các đối tượng Date
     const startDateObject = new Date(startDate)
@@ -87,6 +122,16 @@ export const formatDate = (date) => {
     const formattedDate = format(parsedDate, 'dd MMM, yyyy')
     return formattedDate
 }
+export const formatDateExact = (date) => {
+    const dateObject = new Date(date)
+
+    const year = dateObject.getFullYear() // Lấy năm
+    const month = (dateObject.getMonth() + 1).toString().padStart(2, '0') // Lấy tháng và thêm '0' nếu cần
+    const day = dateObject.getDate().toString().padStart(2, '0') // Lấy ngày và thêm '0' nếu cần
+
+    const formattedDate = `${year}/${month}/${day}`
+    return formattedDate
+}
 
 export const formattedDate = (date) => {
     const newDate = date.toLocaleDateString('en-US', {
@@ -96,4 +141,26 @@ export const formattedDate = (date) => {
         day: 'numeric',
     })
     return newDate
+}
+export const isNonWorkingDay = (dateString, listDayOff) => {
+    const dateParts = dateString.split(' ')
+
+    const day = parseInt(dateParts[0], 10) // Lấy ngày (26)
+    const month = dateParts[1] // Lấy tháng (Sep)
+    const year = parseInt(dateParts[2], 10) // Lấy năm (2023)
+
+    // Tạo một đối tượng Date từ ngày, tháng, năm
+    const date = new Date(`${month} ${day}, ${year}`)
+
+    const dayOfWeek = date.getDay() // 0 = Chủ Nhật, 6 = Thứ 7
+
+    // Kiểm tra nếu ngày là ngày nghỉ dựa trên listDayOff
+    const dayName = getDayName(dayOfWeek)
+    console.log('hikika', dayName, listDayOff, listDayOff[dayName])
+    return listDayOff[dayName.toLowerCase()]
+}
+// Hàm trợ giúp để lấy tên ngày dựa trên số thứ tự
+function getDayName(dayOfWeek) {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    return days[dayOfWeek]
 }

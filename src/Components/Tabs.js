@@ -7,6 +7,8 @@ import Box from '@mui/material/Box'
 import { useTheme } from '@mui/material/styles'
 import AppBar from '@mui/material/AppBar'
 import SwipeableViews from 'react-swipeable-views'
+import { useDispatch } from 'react-redux'
+import { ApplyLeaveAction } from '../Redux/ApplyLeave/ApplyLeaveSlice'
 
 function TabPanel(props) {
     const { children, value, index, ...other } = props
@@ -45,9 +47,10 @@ export default function TabsData(props) {
     const theme = useTheme()
     const { data, isVertical } = props
     const [value, setValue] = React.useState(0)
-
+    const dispatch = useDispatch()
     const handleChange = (event, newValue) => {
         setValue(newValue)
+        dispatch(ApplyLeaveAction.ChangeTab(newValue))
     }
     const handleChangeIndex = (index) => {
         setValue(index)
@@ -64,6 +67,7 @@ export default function TabsData(props) {
                 value={value}
                 onChange={handleChange}
                 aria-label="full width tabs example"
+                className={`${isVertical == true ? 'bg-white' : ''}`}
                 sx={isVertical == true ? { borderRight: 1, borderColor: '#d1d5db', flexShrink: 0 } : { borderRight: 0 }}
                 orientation={isVertical == true ? 'vertical' : 'horizontal'}
                 TabIndicatorProps={

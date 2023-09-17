@@ -51,16 +51,19 @@ const authSlice = createSlice({
 export default authSlice.reducer
 export const EmployeeAction = authSlice.actions
 
-export const getEmployeeAsyncApi = createAsyncThunk('EmployeeReducer/getAsyncApi', async () => {
-    try {
-        const response = await GetEmployeeApi()
-        return response
-    } catch (error) {
-        const json = error.response.data
-        const errors = json[''].errors
-        throw errors[0].errorMessage
+export const getEmployeeAsyncApi = createAsyncThunk(
+    'EmployeeReducer/getAsyncApi',
+    async ({ roleId, departmentId, name }) => {
+        try {
+            const response = await GetEmployeeApi(roleId, departmentId, name)
+            return response
+        } catch (error) {
+            const json = error.response.data
+            const errors = json[''].errors
+            throw errors[0].errorMessage
+        }
     }
-})
+)
 export const getEmployeeByIdAsyncApi = createAsyncThunk('EmployeeReducer/getByIdAsyncApi', async (id) => {
     try {
         const response = await GetEmployeeByIdApi(id)

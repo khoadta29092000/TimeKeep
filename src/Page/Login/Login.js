@@ -1,20 +1,77 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
 import { useDispatch } from 'react-redux'
 import { useHistory, Link } from 'react-router-dom'
+import { loginAsyncApi } from '../../Redux/Account/AccountSlice'
+import { LoadingButton } from '@mui/lab'
 
 function Login() {
     const [showPassword, setShowPassword] = React.useState(false)
+    const [username, setUsername] = React.useState()
+    const [loadingButton, setLoadingButton] = useState(false)
+    const [password, setPassword] = React.useState()
     const [error, setError] = React.useState(false)
     const handleClickShowPassword = () => setShowPassword((show) => !show)
     const handleMouseDownPassword = (event) => {
         event.preventDefault()
     }
+    const userString = localStorage.getItem('role')
+    const userObject = JSON.parse(userString)
+    useEffect(() => {
+        if (userObject && userObject == 'Manager') {
+            history.push('/Manager/Employee')
+        }
+        if (userObject && userObject == 'User') {
+            history.push('/Employee/Dashboard')
+        }
+        if (userObject && userObject == 'HR') {
+            history.push('/Hr/ManageLeave')
+        }
+        if (userObject && userObject == 'Admin') {
+            history.push('/Admin/Team')
+        }
+    }, [])
+    const dispatch = useDispatch()
     let history = useHistory()
     const handleSubmit = () => {
-        history.push('/Employee')
+        setLoadingButton(true)
+        if (username == '' || password == '') {
+            setError('Email or password not null')
+            setLoadingButton(false)
+        }
+        dispatch(
+            loginAsyncApi({
+                email: username,
+                password: password,
+            })
+        ).then((response) => {
+            console.log('Response', response.payload.statusCode == 409)
+            if (response.payload.statusCode == 409) {
+                setError(response.payload.message)
+                setLoadingButton(false)
+            } else if (response.payload.statusCode == 200) {
+                setError()
+                console.log('Response', response)
+                localStorage.setItem('user', JSON.stringify(response.payload.data))
+                localStorage.setItem('role', JSON.stringify(response.payload.role))
+                localStorage.setItem('employeeId', JSON.stringify(response.payload.employeeId))
+                localStorage.setItem('employeeName', JSON.stringify(response.payload.employeeName))
+                localStorage.setItem('avatar', JSON.stringify(response.payload.avatar))
+                if (response.payload.role == 'User') {
+                    history.push('/Employee/Dashboard')
+                } else if (response.payload.role == 'Manager') {
+                    history.push('/Manager/Employee')
+                } else if (response.payload.role == 'HR') {
+                    history.push('/Hr/ManageLeave')
+                } else if (response.payload.role == 'Admin') {
+                    history.push('/Admin/Team')
+                }
+                setLoadingButton(false)
+            }
+        })
     }
+    // history.push('/Employee')
     // const userString = localStorage.getItem("user");
     // const userObject = JSON.parse(userString);
     // useEffect(() => {
@@ -30,7 +87,7 @@ function Login() {
     //   }
 
     // }, []);
-    const dispatch = useDispatch()
+
     //const { user } = useSelector((state) => state.login)
     const formik = useFormik({
         initialValues: {
@@ -56,80 +113,90 @@ function Login() {
                             <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white">
                                 Sign in to Time Keeping System
                             </h1>
-                            <form className="space-y-4 md:space-y-6" action="#">
-                                <div>
-                                    <label
-                                        htmlFor="email"
-                                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                                    >
-                                        Your email
-                                    </label>
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        id="email"
-                                        className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                                        placeholder="name@company.com"
-                                        required=""
-                                    />
-                                </div>
-                                <div>
-                                    <label
-                                        htmlFor="password"
-                                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                                    >
-                                        Password
-                                    </label>
-                                    <input
-                                        type="password"
-                                        name="password"
-                                        id="password"
-                                        placeholder="••••••••"
-                                        className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                                        required=""
-                                    />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-start">
-                                        <div className="flex items-center h-5">
-                                            <input
-                                                id="remember"
-                                                aria-describedby="remember"
-                                                type="checkbox"
-                                                className="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-primary-600 dark:ring-offset-gray-800"
-                                                required=""
-                                            />
-                                        </div>
-                                        <div className="ml-3 text-sm">
-                                            <label htmlFor="remember" className="text-gray-500 dark:text-gray-300">
-                                                Remember me
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <Link
-                                        to="/"
-                                        className="text-sm font-medium text-primary-600 hover:underline dark:text-primary-500"
-                                    >
-                                        Forgot password?
-                                    </Link>
-                                </div>
-                                <button
-                                    onClick={handleSubmit}
-                                    type="submit"
-                                    className="w-full text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
+
+                            {error && <p className="text-red-500 font-bold text-center text-xl">{error}</p>}
+                            <div>
+                                <label
+                                    htmlFor="email"
+                                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                                 >
-                                    Sign in
-                                </button>
-                                <p className="text-sm font-light text-gray-500 dark:text-gray-400">
-                                    Don’t have an account yet?{' '}
-                                    <Link
-                                        to="/"
-                                        className="font-medium text-primary-600 hover:underline dark:text-primary-500"
-                                    >
-                                        Sign up
-                                    </Link>
-                                </p>
-                            </form>
+                                    Your email
+                                </label>
+                                <input
+                                    //type="email"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    name="email"
+                                    id="email"
+                                    className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                                    placeholder="name@company.com"
+                                    required=""
+                                />
+                            </div>
+                            <div>
+                                <label
+                                    htmlFor="password"
+                                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                                >
+                                    Password
+                                </label>
+                                <input
+                                    type="password"
+                                    name="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    id="password"
+                                    placeholder="••••••••"
+                                    className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                                    required=""
+                                />
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-start">
+                                    <div className="flex items-center h-5">
+                                        <input
+                                            id="remember"
+                                            aria-describedby="remember"
+                                            type="checkbox"
+                                            className="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-primary-600 dark:ring-offset-gray-800"
+                                            required=""
+                                        />
+                                    </div>
+                                    <div className="ml-3 text-sm">
+                                        <label htmlFor="remember" className="text-gray-500 dark:text-gray-300">
+                                            Remember me
+                                        </label>
+                                    </div>
+                                </div>
+                                <Link
+                                    to="/"
+                                    className="text-sm font-medium text-primary-600 hover:underline dark:text-primary-500"
+                                >
+                                    Forgot password?
+                                </Link>
+                            </div>
+                            <LoadingButton
+                                onClick={handleSubmit}
+                                loading={loadingButton}
+                                variant="contained"
+                                color="primary"
+                                sx={{
+                                    textAlign: 'center',
+                                }}
+                                autoFocus
+                                className="w-full text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
+                            >
+                                Sign in
+                            </LoadingButton>
+                            {/* <p className="text-sm font-light text-gray-500 dark:text-gray-400">
+                                Don’t have an account yet?{' '}
+                                <Link
+                                    to="/"
+                                    className="font-medium text-primary-600 hover:underline dark:text-primary-500"
+                                >
+                                    Sign up
+                                </Link>
+                            </p> */}
                         </div>
                     </div>
                 </div>

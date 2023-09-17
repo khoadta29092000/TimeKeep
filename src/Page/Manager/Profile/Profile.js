@@ -1,5 +1,4 @@
-import React, { useState } from 'react'
-import Navbar from '../Navbar'
+import React, { useState, useEffect } from 'react'
 
 //mui
 
@@ -16,6 +15,10 @@ import TabsData from '../../../Components/Tabs'
 import General from '../EmployeeDetail/General'
 import ChangePassword from './ChangePassword'
 import TimeEntries from '../EmployeeDetail/TimeEntries'
+import NavbarManager from '../Navbar'
+import NavbarHR from '../NavbarHR'
+import NavbarAdmin from '../../Admin/Navbar'
+import Navbar from '../../Employee/Navbar'
 
 const breadcrumbIcons = () => {
     const data = [
@@ -38,17 +41,34 @@ const tabsData = [
         icon: <KeyIcon />,
         view: <ChangePassword />,
     },
-    {
-        label: 'Time Entries',
-        icon: <EventNoteIcon />,
-        view: <TimeEntries />,
-    },
+    // {
+    //     label: 'Time Entries',
+    //     icon: <EventNoteIcon />,
+    //     view: <TimeEntries />,
+    // },
 ]
 
 export default function Profile() {
+    const userStringRole = localStorage.getItem('role')
+    const role = JSON.parse(userStringRole)
+    let newNav = null
+    console.log('role', role)
+    useEffect(() => {
+        if (role) {
+            if (role === 'Manager') {
+                newNav = <NavbarManager />
+            } else if (role === 'User') {
+                newNav = <Navbar />
+            } else if (role === 'HR') {
+                newNav = <NavbarHR />
+            } else if (role === 'Admin') {
+                newNav = <NavbarAdmin />
+            }
+        }
+    }, [role])
     return (
         <div>
-            <Navbar />
+            {newNav}
             <div className="sm:ml-64 pt-20 h-screen bg-gray-50">
                 <div className="px-12 py-6">
                     <h2 className="font-bold text-3xl mb-4">Account</h2>

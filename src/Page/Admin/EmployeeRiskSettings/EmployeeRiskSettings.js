@@ -4,7 +4,7 @@ import { NavLink } from 'react-router-dom'
 
 //Mui
 import { Button, IconButton, Tooltip } from '@mui/material'
-
+import { LoadingButton } from '@mui/lab'
 //Icon
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import DashboardIcon from '@mui/icons-material/Dashboard'
@@ -48,6 +48,7 @@ const dataUser = [
 ]
 
 export default function RiskEmployeeSettings() {
+    const [loadingButton, setLoadingButton] = useState(false)
     const [page, setPage] = useState(0)
     const [rowsPerPage, setRowsPerPage] = useState(10)
     const [isAction, setIsAction] = useState(0)
@@ -139,7 +140,6 @@ export default function RiskEmployeeSettings() {
             ),
         }))
     }
-
     const rows = createRows()
     const viewModalContent = (
         <Fragment>

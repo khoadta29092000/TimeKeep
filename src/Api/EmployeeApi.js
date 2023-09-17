@@ -2,9 +2,11 @@ import axios from 'axios'
 
 const API_URL = process.env.REACT_APP_API_URL
 
-const GetEmployeeApi = async () => {
+const GetEmployeeApi = async (roleId, DepartmentId, name) => {
     try {
-        const response = await axios.get(`${API_URL}/Employees`)
+        const response = await axios.get(
+            `${API_URL}/Employee?roleId=${roleId}&DepartmentID=${DepartmentId}&Searchname=${name}`
+        )
         return response.data
     } catch (error) {
         throw error
@@ -12,7 +14,7 @@ const GetEmployeeApi = async () => {
 }
 export const GetEmployeeByIdApi = async (id) => {
     try {
-        const response = await axios.get(`${API_URL}/Employees/${id}`)
+        const response = await axios.get(`${API_URL}/Employee/get-employee-by-id?employeeId=${id}`)
         return response.data
     } catch (error) {
         throw error
@@ -29,7 +31,7 @@ export const PostEmployeeApi = async (body) => {
 
 export const PutEmployeeApi = async (body) => {
     try {
-        const response = await axios.put(`${API_URL}/Employees`, body)
+        const response = await axios.patch(`${API_URL}/Employee/edit-employee-by-id`, body)
         return response.data
     } catch (error) {
         throw error

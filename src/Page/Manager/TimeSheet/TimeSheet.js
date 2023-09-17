@@ -5,7 +5,7 @@ import { DateRangePicker } from 'react-date-range'
 import 'react-date-range/dist/styles.css'
 import 'react-date-range/dist/theme/default.css'
 //mui
-import { Button, Stack, Avatar } from '@mui/material'
+import { Button, Stack, Avatar, Autocomplete, TextField } from '@mui/material'
 
 //icon
 import FilterListIcon from '@mui/icons-material/FilterList'
@@ -36,26 +36,24 @@ const dataBreadcrumbs = breadcrumbIcons()
 const dataList = [
     {
         name: 'Việt',
-        avatar: 'https://haycafe.vn/wp-content/uploads/2022/03/Anh-anime-nu-anh-anime-girl-449x600.jpg',
         working: [
-            { out: '7:00', in: '7:00', work: '7:00', active: '7:00', date: new Date() },
-            { out: '7:00', in: '7:00', work: '7:00', active: '7:00', date: new Date() },
-            { out: '7:00', in: '7:00', work: '7:00', active: '7:00', date: new Date() },
-            { out: '7:00', in: '7:00', work: '7:00', active: '7:00', date: new Date() },
-            { out: '7:00', in: '7:00', work: '7:00', active: '7:00', date: new Date() },
-            { out: '7:00', in: '7:00', work: '7:00', active: '7:00', date: new Date() },
-            { out: '7:00', in: '7:00', work: '7:00', active: '7:00', date: new Date() },
-            { out: '7:00', in: '7:00', work: '7:00', active: '7:00', date: new Date() },
-            { out: '7:00', in: '7:00', work: '7:00', active: '7:00', date: new Date() },
-            { out: '7:00', in: '7:00', work: '7:00', active: '7:00', date: new Date() },
+            { out: '7:00', in: '7:00', work: '7:00', active: '7:00', date: '2023/08/12', overTime: '3:00' },
+            { out: '7:00', in: '7:00', work: '7:00', active: '7:00', date: '2023/08/12', overTime: '0:00' },
+            { out: '7:00', in: '7:00', work: '7:00', active: '7:00', date: '2023/08/12', overTime: '0:00' },
+            { out: '7:00', in: '7:00', work: '7:00', active: '7:00', date: '2023/08/12', overTime: '0:00' },
+            { out: '7:00', in: '7:00', work: '7:00', active: '7:00', date: '2023/08/12', overTime: '3:00' },
+            { out: '7:00', in: '7:00', work: '7:00', active: '7:00', date: '2023/08/12', overTime: '0:00' },
+            { out: '7:00', in: '7:00', work: '7:00', active: '7:00', date: '2023/08/12', overTime: '3:00' },
+            { out: '7:00', in: '7:00', work: '7:00', active: '7:00', date: '2023/08/12', overTime: '0:00' },
+            { out: '7:00', in: '7:00', work: '7:00', active: '7:00', date: '2023/08/12', overTime: '0:00' },
+            { out: '7:00', in: '7:00', work: '7:00', active: '7:00', date: '2023/08/12', overTime: '3:00' },
         ],
     },
     {
         name: 'Đạt',
-        avatar: 'https://antimatter.vn/wp-content/uploads/2022/11/hinh-anh-anime-nu-334x600.jpg',
         working: [
-            { out: '00:00', in: '7:00', work: '7:00', active: '7:00', date: new Date() },
-            { out: '7:00', in: '7:00', work: '7:00', active: '7:00', date: new Date() },
+            { out: '00:00', in: '7:00', work: '7:00', active: '7:00', date: '2023/08/12', overTime: '0:00' },
+            { out: '7:00', in: '7:00', work: '7:00', active: '7:00', date: '2023/08/12', overTime: '3:00' },
         ],
     },
 ]
@@ -86,6 +84,7 @@ export default function TimeSheet() {
     const handleClickSave = () => {
         setOpen(false)
     }
+    const topName = ['khoa', 'việt', 'tài']
     const viewModalContent = (
         <DateRangePicker ranges={[selectedDateRange]} onChange={handleDateRangeChange} minDate={new Date()} />
     )
@@ -112,7 +111,7 @@ export default function TimeSheet() {
                         <IconBreadcrumbs data={dataBreadcrumbs} />
                     </div>
                     <div className="bg-white p-4">
-                        <div className="mb-5 flex items-center">
+                        <div className="mb-5 md:flex items-center">
                             <Stack direction="row" spacing={2}>
                                 <Button
                                     onClick={handleClickOpen}
@@ -135,12 +134,22 @@ export default function TimeSheet() {
                                           formattedDate(selectedDateRange.endDate)}
                                 </Button>
                             </Stack>
-                            <div className="ml-auto flex items-center gap-4 mr-4">
+                            <div className="ml-auto my-4 md:my-0 flex items-center gap-4 mr-4">
                                 <Button variant="contained" size="small" startIcon={<FileDownloadIcon />}>
                                     Export
                                 </Button>
                                 <FilterListIcon className="" />
                             </div>
+                        </div>
+                        <div className="my-4">
+                            <Autocomplete
+                                disablePortal
+                                id="combo-box-demo"
+                                options={topName}
+                                size="small"
+                                sx={{ width: 250 }}
+                                renderInput={(params) => <TextField {...params} label="Search Employee" />}
+                            />
                         </div>
                         <div className="overflow-x-auto ">
                             <table className="w-full table-fixed">
@@ -196,17 +205,6 @@ export default function TimeSheet() {
                                                                         <div className="transition ease-in-out hover:scale-110 m-2 delay-150 py-1 px-2 bg-red-100">
                                                                             <div className="flex items-center">
                                                                                 <div className="text-gray-400 font-medium">
-                                                                                    {working.out}
-                                                                                </div>
-                                                                                <div
-                                                                                    id="out"
-                                                                                    className="uppercase text-xs text-gray-400 ml-auto"
-                                                                                >
-                                                                                    out
-                                                                                </div>
-                                                                            </div>
-                                                                            <div className="flex items-center">
-                                                                                <div className="text-gray-400 font-medium">
                                                                                     {working.in}
                                                                                 </div>
                                                                                 <div
@@ -214,6 +212,17 @@ export default function TimeSheet() {
                                                                                     className="uppercase text-xs text-gray-400 ml-auto"
                                                                                 >
                                                                                     in
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="flex items-center">
+                                                                                <div className="text-gray-400 font-medium">
+                                                                                    {working.out}
+                                                                                </div>
+                                                                                <div
+                                                                                    id="out"
+                                                                                    className="uppercase text-xs text-gray-400 ml-auto"
+                                                                                >
+                                                                                    out
                                                                                 </div>
                                                                             </div>
                                                                             <div className="flex items-center">

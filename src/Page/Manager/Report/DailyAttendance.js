@@ -19,7 +19,7 @@ const dataBreadcrumbs = breadcrumbIcons()
 
 export default function DailyAttendance() {
     return (
-        <div className="h-screen ">
+        <div className="">
             <div className="px-12 py-6">
                 <h2 className="font-bold text-3xl mb-4">Daily Attendance</h2>
                 <div className="mb-8 font-semibold">

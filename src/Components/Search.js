@@ -17,7 +17,6 @@ function Search({ parentCallback }) {
     const [setSearchTerm] = useState('')
     const handleSearchTermChange = (event) => {
         const value = event.target.value
-        setSearchTerm(value)
         parentCallback(value)
     }
 

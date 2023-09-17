@@ -1,4 +1,4 @@
-import React, { Fragment, useState } from 'react'
+import React, { Fragment, useEffect, useRef, useState } from 'react'
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
 
@@ -7,12 +7,13 @@ import { DateRange } from 'react-date-range'
 import 'react-date-range/dist/styles.css'
 import 'react-date-range/dist/theme/default.css'
 import './DateRangePickerCustomStyles.css'
-import { addDays, startOfDay } from 'date-fns'
+import { addDays, startOfDay, parse, set } from 'date-fns'
 //Firebase
 import { ref, getDownloadURL, uploadBytesResumable } from 'firebase/storage'
 import { storage } from '../../../Config/FirebaseConfig'
 
 //Mui
+import { styled } from '@mui/system'
 import {
     Popover,
     InputAdornment,
@@ -25,7 +26,9 @@ import {
     DialogActions,
     Tooltip,
     IconButton,
+    InputLabel,
 } from '@mui/material'
+import { LoadingButton } from '@mui/lab'
 
 //Icon
 import EventNoteIcon from '@mui/icons-material/EventNote'
@@ -43,8 +46,40 @@ import TableData from '../../../Components/Table'
 import IconBreadcrumbs from '../../../Components/Breadcrumbs'
 import PopupData from '../../../Components/Popup'
 import PopupConfirm from '../../../Components/PopupConfirm'
-import Navbar from '../../Manager/Navbar'
-import { calculateDays, formatDate, getDateRangeArray } from '../../../Hook/useFormatDate'
+import Navbar from '../Navbar'
+
+//hooks
+import {
+    calculateDays,
+    formatDate,
+    formattedDate,
+    getDateRangeArray,
+    getDayOfWeek,
+    isNonWorkingDay,
+} from '../../../Hook/useFormatDate'
+import { useDispatch, useSelector } from 'react-redux'
+import {
+    GetApplyLeaveTypeAsyncApi,
+    GetWorkDateSettingByIdAsyncApi,
+    PostApplyLeaveAsyncApi,
+    PutApplyLeaveAsyncApi,
+    getApplyLeaveByIdAsyncApi,
+} from '../../../Redux/ApplyLeave/ApplyLeaveSlice'
+import TableLoadData from '../../../Components/TableLoad'
+import { useSnackbar } from '../../../Hook/useSnackbar'
+
+const CustomSelect = styled(Select)`
+    color: #60a5fa; // Đổi màu chữ thành xanh
+    & select:focus {
+        background-color: transparent; // Loại bỏ màu nền khi focus
+    }
+    & svg {
+        color: #60a5fa; // Đổi màu biểu tượng mũi tên thành xanh
+    }
+    & fieldset {
+        border: none; // Loại bỏ viền xung quanh
+    }
+`
 
 const columns = [
     { id: 'number', label: 'Number', minWidth: 50, align: 'center' },
@@ -58,8 +93,8 @@ const columns = [
 
 const breadcrumbIcons = () => {
     const data = [
-        { title: 'Dashboard', icon: <DashboardIcon />, url: '/', status: true },
-        { title: 'Apply Leave', icon: <BadgeIcon />, url: '/Employee', status: false },
+        { title: 'Dashboard', icon: <DashboardIcon />, url: '/Employee/Dashboard', status: true },
+        { title: 'Apply Leave', icon: <BadgeIcon />, url: '/Employee/ApplyLeave', status: false },
     ]
     return data
 }
@@ -67,9 +102,10 @@ const breadcrumbIcons = () => {
 const dataBreadcrumbs = breadcrumbIcons()
 
 export default function ApplyLeave() {
+    const [loadingButton, setLoadingButton] = useState(false)
     //popover
     const [anchorEl, setAnchorEl] = React.useState(null)
-
+    const showSnackbar = useSnackbar()
     const handleClick = (event) => {
         setAnchorEl(event.currentTarget)
     }
@@ -77,7 +113,10 @@ export default function ApplyLeave() {
     const handleClose = () => {
         setAnchorEl(null)
     }
-
+    const [error, SetError] = useState()
+    const [errorImport, seterrorImport] = useState(false)
+    const [chosenFileName, setChosenFileName] = useState('Chosen file')
+    const fileInputRef = useRef(null)
     const openPopover = Boolean(anchorEl)
     const id = openPopover ? 'simple-popover' : undefined
     const [page, setPage] = useState(0)
@@ -85,14 +124,27 @@ export default function ApplyLeave() {
     const [open, setOpen] = useState(false)
     const [openConfirm, setOpenConfirm] = useState(false)
     const [isAction, setIsAction] = useState(0)
+    const [isLoading, setIsLoading] = useState(false)
     const [search, setSearch] = useState('')
     const [selectedImage, setSelectedImage] = useState()
     const [click, SetClick] = useState(false)
+    const [leaveErorr, setLeaveErorr] = useState()
     const [leaveDays, setLeaveDays] = useState(0)
     const [leaveDaysDate, setLeaveDaysDate] = useState([])
     const today = new Date()
     const threeDaysLater = addDays(today, 3)
-
+    const [RequestId, setRequestId] = useState()
+    const userStringEmployeeName = localStorage.getItem('employeeId')
+    const employeeId = JSON.parse(userStringEmployeeName)
+    const listDayOff = {
+        Monday: true,
+        Tuesday: true,
+        Wednesday: true,
+        Thursday: false,
+        Friday: true,
+        Saturday: false,
+        Sunday: false,
+    }
     const [dateRange, setDateRange] = useState([
         {
             startDate: threeDaysLater,
@@ -100,54 +152,272 @@ export default function ApplyLeave() {
             key: 'selection',
         },
     ])
+    //setting redux
+    const { ApplyLeaveByEmployee, ApplyLeaveTypeList, WorkSetting, loading } = useSelector((state) => state.applyLeave)
+    const dispatch = useDispatch()
+    useEffect(() => {
+        dispatch(GetWorkDateSettingByIdAsyncApi(employeeId))
+        dispatch(getApplyLeaveByIdAsyncApi(employeeId))
+        dispatch(GetApplyLeaveTypeAsyncApi())
+        return () => {}
+    }, [])
     const minDate = startOfDay(threeDaysLater)
-    const dataLeaveType = ['Casual Leave', 'Sick Leave']
     const initialValues = {
         leaveReason: '',
-        leaveType: 'Casual Leave',
+        leaveType: '',
         leaveDate: '',
     }
     const formik = useFormik({
         initialValues: initialValues,
         validationSchema: Yup.object({
             leaveReason: Yup.string().required(),
+            leaveType: Yup.string().required(),
         }),
         onSubmit: (values) => {
-            console.log('chay')
-            const storageRef = ref(storage, `Package/${selectedImage.name}`)
-            const uploadTask = uploadBytesResumable(storageRef, selectedImage)
-            uploadTask.on(
-                'state_changed',
-                (snapshot) => {
-                    const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100)
-                },
-                (error) => {
-                    alert(error)
-                },
-                () => {
-                    getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {})
+            console.log('chay', click)
+            setIsLoading(true)
+
+            if (click == true) {
+                const { format, parse } = require('date-fns')
+                let transformedDates = leaveDaysDate.map((date) => {
+                    if (date.type !== 'nonWorkingDay') {
+                        // Biến đổi title thành định dạng "YYYY/MM/DD"
+                        const parsedDate = parse(date.title, 'dd MMM, yyyy', new Date())
+                        const formattedDateStr = format(parsedDate, 'yyyy/MM/dd')
+
+                        return {
+                            title: formattedDateStr,
+                            type: date.type,
+                        }
+                    } else {
+                        return date // Giữ nguyên các mục có type là 'nonWorkingDay'
+                    }
+                })
+                // Lọc bỏ các mục có type là 'nonWorkingDay'
+                transformedDates = transformedDates.filter((date) => date.type !== 'nonWorkingDay')
+                const startDateStr = format(dateRange[0].startDate, 'yyyy/MM/dd')
+                const endDateStr = format(dateRange[0].endDate, 'yyyy/MM/dd')
+                const storageRef = ref(storage, `Package/${selectedImage.name}`)
+                const uploadTask = uploadBytesResumable(storageRef, selectedImage)
+                uploadTask.on(
+                    'state_changed',
+                    (snapshot) => {
+                        const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100)
+                    },
+                    (error) => {
+                        alert(error)
+                    },
+                    () => {
+                        getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
+                            const data = {
+                                Name: 'Request Leave Of Employee',
+                                startDate: startDateStr,
+                                endDate: endDateStr,
+                                leaveTypeId: values.leaveType,
+                                reason: values.leaveReason,
+                                linkFile: downloadURL,
+                                dateRange: transformedDates,
+                            }
+                            const Updatedata = {
+                                id: RequestId,
+                                startDate: startDateStr,
+                                endDate: endDateStr,
+                                leaveTypeId: values.leaveType,
+                                reason: values.leaveReason,
+                                linkFile: downloadURL,
+                                dateRange: transformedDates,
+                            }
+                            console.log('thanh cong', data, isAction)
+                            if (isAction == 1) {
+                                dispatch(PostApplyLeaveAsyncApi({ id: employeeId, body: data }))
+                                    .then((response) => {
+                                        console.log('Response', response.meta.requestStatus == 'fulfilled')
+                                        if (response.meta.requestStatus == 'fulfilled') {
+                                            setSelectedImage()
+                                            setIsLoading(false)
+                                            showSnackbar({
+                                                severity: 'success',
+                                                children: 'Request Successfully',
+                                            })
+                                            setOpen(false)
+                                            setIsAction(0)
+                                            formik.setTouched({})
+                                            SetClick(false)
+                                            formik.setErrors({})
+                                            setChosenFileName('Chosen file')
+                                            formik.setValues({
+                                                leaveReason: '',
+                                                leaveType: '',
+                                                leaveDate: '',
+                                            })
+                                            setDateRange([
+                                                {
+                                                    startDate: threeDaysLater,
+                                                    endDate: threeDaysLater,
+                                                    key: 'selection',
+                                                },
+                                            ])
+                                            setLeaveDays(0)
+                                            setLeaveDaysDate([])
+                                            dispatch(getApplyLeaveByIdAsyncApi(employeeId))
+                                        }
+                                        setIsLoading(false)
+                                    })
+                                    .catch((error) => {
+                                        // Xử lý lỗi ở đây
+                                        setIsLoading(false)
+                                        console.error('Lỗi API:', error)
+                                    })
+                            } else if (isAction == 2) {
+                                dispatch(PutApplyLeaveAsyncApi({ id: employeeId, body: Updatedata }))
+                                    .then((response) => {
+                                        if (response.meta.requestStatus == 'fulfilled') {
+                                            setRequestId()
+                                            showSnackbar({
+                                                severity: 'success',
+                                                children: 'Request Successfully',
+                                            })
+                                            setOpen(false)
+                                            setIsAction(0)
+                                            SetClick(false)
+                                            formik.setTouched({})
+                                            formik.setErrors({})
+                                            setChosenFileName('Chosen file')
+                                            formik.setValues({
+                                                leaveReason: '',
+                                                leaveType: '',
+                                                leaveDate: '',
+                                            })
+                                            setSelectedImage()
+                                            setDateRange([
+                                                {
+                                                    startDate: threeDaysLater,
+                                                    endDate: threeDaysLater,
+                                                    key: 'selection',
+                                                },
+                                            ])
+                                            setLeaveDays(0)
+                                            setLeaveDaysDate([])
+                                            dispatch(getApplyLeaveByIdAsyncApi(employeeId))
+                                        }
+                                        setIsLoading(false)
+                                    })
+                                    .catch((error) => {
+                                        setIsLoading(false)
+                                        console.error('Lỗi API:', error)
+                                    })
+                            }
+                        })
+                    }
+                )
+            } else {
+                console.log('chay1')
+                setIsLoading(true)
+                const { format, parse } = require('date-fns')
+                let transformedDates = leaveDaysDate.map((date) => {
+                    if (date.type !== 'nonWorkingDay') {
+                        // Biến đổi title thành định dạng "YYYY/MM/DD"
+                        const parsedDate = parse(date.title, 'dd MMM, yyyy', new Date())
+                        const formattedDateStr = format(parsedDate, 'yyyy/MM/dd')
+
+                        return {
+                            title: formattedDateStr,
+                            type: date.type,
+                        }
+                    } else {
+                        return date // Giữ nguyên các mục có type là 'nonWorkingDay'
+                    }
+                })
+                // Lọc bỏ các mục có type là 'nonWorkingDay'
+                transformedDates = transformedDates.filter((date) => date.type !== 'nonWorkingDay')
+                const startDateStr = format(dateRange[0].startDate, 'yyyy/MM/dd')
+                const endDateStr = format(dateRange[0].endDate, 'yyyy/MM/dd')
+                const Updatedata = {
+                    id: RequestId,
+                    startDate: startDateStr,
+                    endDate: endDateStr,
+                    leaveTypeId: values.leaveType,
+                    reason: values.leaveReason,
+                    dateRange: transformedDates,
                 }
-            )
+                dispatch(PutApplyLeaveAsyncApi({ id: employeeId, body: Updatedata }))
+                    .then((response) => {
+                        if (response.meta.requestStatus == 'fulfilled') {
+                            setRequestId()
+
+                            showSnackbar({
+                                severity: 'success',
+                                children: 'Request Successfully',
+                            })
+                            setOpen(false)
+                            setIsAction(0)
+                            SetClick(false)
+                            formik.setTouched({})
+                            formik.setErrors({})
+                            setChosenFileName('Chosen file')
+                            formik.setValues({
+                                leaveReason: '',
+                                leaveType: '',
+                                leaveDate: '',
+                            })
+                            setSelectedImage()
+                            setDateRange([
+                                {
+                                    startDate: threeDaysLater,
+                                    endDate: threeDaysLater,
+                                    key: 'selection',
+                                },
+                            ])
+                            setLeaveDays(0)
+                            setLeaveDaysDate([])
+                            dispatch(getApplyLeaveByIdAsyncApi(employeeId))
+                        }
+                        setIsLoading(false)
+                    })
+                    .catch((error) => {
+                        setIsLoading(false)
+                        console.error('Lỗi API:', error)
+                    })
+            }
         },
     })
 
     const handleDateChange = (ranges) => {
         setDateRange([ranges.selection])
+        setLeaveErorr()
         if (ranges.selection.startDate && ranges.selection.endDate) {
-            setLeaveDays(calculateDays(ranges.selection.startDate, ranges.selection.endDate))
             const newDate = []
             const daysToAdd = calculateDays(ranges.selection.startDate, ranges.selection.endDate)
-
             const dateArray = getDateRangeArray(ranges.selection.startDate, ranges.selection.endDate)
-            console.log('dateArray', dateArray[1])
-            for (let i = 0; i < daysToAdd; i++) {
-                newDate.push({ title: dateArray[i], type: 'Full Day' })
+            const RuleDay = calculateDays(today, ranges.selection.startDate)
+            console.log('ngu', daysToAdd, RuleDay, RuleDay > 2, RuleDay < 5, daysToAdd <= 3)
+            if (RuleDay > 2 && RuleDay < 5 && daysToAdd > 3) {
+                setLeaveErorr('đăng ký trước 2 ngày với đơn nghỉ dưới 3 ngày')
             }
-
-            setLeaveDaysDate(newDate)
+            if (RuleDay > 5 && RuleDay < 10 && daysToAdd > 7) {
+                setLeaveErorr('trước 5 ngày vs đơn từ 3-7 ngày')
+            } else {
+                for (let i = 0; i < daysToAdd; i++) {
+                    console.log(
+                        'hikika',
+                        dateArray[i],
+                        WorkSetting.dateStatus,
+                        isNonWorkingDay(dateArray[i], WorkSetting.dateStatus)
+                    )
+                    newDate.push({
+                        title: dateArray[i],
+                        type:
+                            isNonWorkingDay(dateArray[i], WorkSetting.dateStatus) == false
+                                ? 'nonWorkingDay'
+                                : 'Full Day',
+                    })
+                }
+                setLeaveDaysDate(newDate)
+                setLeaveDays(calculateDays(ranges.selection.startDate, ranges.selection.endDate))
+            }
         }
     }
-    console.log('day', leaveDays)
+    console.log('day', leaveDays, formik.values, ApplyLeaveByEmployee.length)
     const handleChangePage = (newPage) => {
         setPage(newPage)
     }
@@ -164,21 +434,58 @@ export default function ApplyLeave() {
     }
     const handleClickOpenUpdate = (data) => {
         setOpen(true)
+        setRequestId(data.id)
         setIsAction(2)
-        console.log('data', data)
+        console.log('data', data.startDate, parse(data.startDate, 'dd/MM/yyyy', new Date()))
+        const newDate = data.dateRange.map((item, index) => ({
+            title: formatDate(item.title),
+            type: item.type,
+        }))
+        setLeaveDaysDate(newDate)
+        setLeaveDays(data.dateRange.length)
+        setChosenFileName(data.linkFile)
+        seterrorImport(true)
+        setDateRange([
+            {
+                startDate: parse(data.startDate, 'yyyy/MM/dd', new Date()),
+                endDate: parse(data.endDate, 'yyyy/MM/dd', new Date()),
+                key: 'selection',
+            },
+        ])
         formik.setValues({
-            leaveReason: data.leaveReason,
-            leaveType: 'Casual Leave',
+            leaveReason: data.reason,
+            leaveType: data.leaveTypeId,
             leaveDate: '',
         })
     }
-
+    const handleFileInputChange = (event) => {
+        event.preventDefault()
+        const selectedFile = event.target.files[0]
+        seterrorImport(false)
+        SetClick(true)
+        setSelectedImage(event.target.files[0])
+        SetError()
+        if (selectedFile) {
+            setChosenFileName(selectedFile.name)
+            seterrorImport(true)
+        }
+    }
+    const handleBrowseButtonClick = (event) => {
+        event.preventDefault()
+        fileInputRef.current.click()
+    }
     const clickOpenFalse = (event) => {
         setOpen(false)
+        setRequestId()
         setIsAction(0)
+        setSelectedImage()
+        seterrorImport(false)
+        formik.setTouched({})
+        formik.setErrors({})
+        setChosenFileName('Chosen file')
         formik.setValues({
             leaveReason: '',
-            leaveType: 'Casual Leave',
+            leaveType: '',
             leaveDate: '',
         })
         setDateRange([
@@ -203,11 +510,11 @@ export default function ApplyLeave() {
     const viewModalContent = (
         <Fragment>
             <form onSubmit={formik.handleSubmit}>
-                <div className="grid grid-cols-2 gap-5 py-4 px-8 mb-5 lg:my-0">
+                <div className="grid md:grid-cols-2 gap-5 py-4 px-8 mb-5 lg:my-0">
                     <div>
                         <div className="my-2">
                             <div className="mb-1">
-                                <strong className=" text-gray-500">Leave Type</strong>
+                                <strong className=" text-gray-500">Leave Type</strong> <i className="text-red-500">*</i>
                             </div>
                             <FormControl fullWidth>
                                 <Select
@@ -221,19 +528,23 @@ export default function ApplyLeave() {
                                     name="leaveType"
                                     variant="outlined"
                                 >
-                                    {dataLeaveType.map((item, index) => {
+                                    {ApplyLeaveTypeList.map((item, index) => {
                                         return (
-                                            <MenuItem key={index} value={item}>
-                                                {item}
+                                            <MenuItem key={index} value={item.id}>
+                                                {item.name}
                                             </MenuItem>
                                         )
                                     })}
                                 </Select>
                             </FormControl>
+                            {formik.errors.leaveType && formik.touched.leaveType && (
+                                <div className="text mt-1 text-red-600 font-semibold">{formik.errors.leaveType}</div>
+                            )}
                         </div>
                         <div className="my-2">
                             <div className="mb-1">
-                                <strong className=" text-gray-500">Leave Dates</strong>
+                                <strong className=" text-gray-500">Leave Dates</strong>{' '}
+                                <i className="text-red-500">*</i>
                             </div>
                             <div>
                                 <OutlinedInput
@@ -251,9 +562,9 @@ export default function ApplyLeave() {
                                         </InputAdornment>
                                     }
                                     value={
-                                        dateRange[0].startDate.toDateString() +
+                                        formattedDate(dateRange[0].startDate) +
                                         ' - ' +
-                                        dateRange[0].endDate?.toDateString()
+                                        formattedDate(dateRange[0].endDate)
                                     }
                                     readOnly
                                 />
@@ -280,9 +591,11 @@ export default function ApplyLeave() {
                                     </Popover>
                                 )}
                             </div>
+
                             <div className="my-2">
                                 <div className="mb-1">
-                                    <strong className=" text-gray-500">Leave Reason</strong>
+                                    <strong className=" text-gray-500">Leave Reason</strong>{' '}
+                                    <i className="text-red-500">*</i>
                                 </div>
                                 <FormControl fullWidth>
                                     <TextField
@@ -300,22 +613,98 @@ export default function ApplyLeave() {
                                         variant="outlined"
                                     />
                                 </FormControl>
+                                {formik.errors.leaveReason && formik.touched.leaveReason && (
+                                    <div className="text mt-1 text-red-600 font-semibold">
+                                        {formik.errors.leaveReason}
+                                    </div>
+                                )}
+                            </div>
+                            <div className="my-2 relative">
+                                <div className="mb-1">
+                                    <strong className=" text-gray-500">Chosen File</strong>{' '}
+                                    <i className="text-red-500">*</i>
+                                </div>
+                                <input
+                                    className="hidden w-full" // Ẩn input mặc định
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleFileInputChange}
+                                />
+                                <button
+                                    onClick={(e) => handleBrowseButtonClick(e)}
+                                    className="border-[1px] cursor-pointer rounded-md h-10 bg-gray-300 px-4 absolute "
+                                >
+                                    Browse
+                                </button>
+                                <div>
+                                    <button
+                                        onClick={(e) => handleBrowseButtonClick(e)}
+                                        className="cursor-pointer  block rounded-md h-10 text-left w-full pl-[90px] font-medium text-gray-600  border border-gray-300   bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400"
+                                        variant="contained"
+                                    >
+                                        {chosenFileName.length > 16
+                                            ? chosenFileName.slice(0, 16).concat('...')
+                                            : chosenFileName}
+                                    </button>
+                                    {error && <div className="text-red-500 w-full">{error}</div>}
+                                    {isAction == 2 && (
+                                        <a
+                                            className="mt-2 text-blue-400 underline"
+                                            href={chosenFileName}
+                                            target="_blank"
+                                        >
+                                            Link
+                                        </a>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
                     <div className="bg-blue-100 relative">
                         <h2 className="font-medium m-4 text-lg text-gray-500">Your Leave Details</h2>
-                        <div className="h-[240px] p-4  overflow-auto">
-                            {leaveDaysDate.map((item, index) => {
-                                return (
-                                    <div className="flex mb-5 ">
-                                        <div className="font-bold text-gray-400">{item.title}</div>
-                                        <div className="flex gap-3 text-blue-600 font-bold ml-auto">
-                                            {item.type} <ArrowDropDownIcon />
+                        <div className="h-[280px]  px-4  overflow-auto">
+                            {leaveErorr ? (
+                                <div className="text-red-500 text-center">{leaveErorr}</div>
+                            ) : leaveDaysDate.length < 1 ? (
+                                <div className="text-center  text-gray-400">Yet to select dates</div>
+                            ) : (
+                                leaveDaysDate.map((item, index) => {
+                                    return (
+                                        <div key={index} className="flex mb-5  items-center">
+                                            <div className="font-bold">
+                                                {item.title}{' '}
+                                                <strong className="font-semibold text-gray-500">
+                                                    ({getDayOfWeek(item.title)}){' '}
+                                                </strong>
+                                            </div>
+                                            <div className="flex gap-3 text-blue-400 font-bold ml-auto">
+                                                {item.type == 'nonWorkingDay' ? (
+                                                    <strong className="font-semibold text-gray-500">
+                                                        Non Working days
+                                                    </strong>
+                                                ) : (
+                                                    <CustomSelect
+                                                        labelId="demo-simple-select-label"
+                                                        id="demo-simple-select"
+                                                        className="outline-none text-blue-400"
+                                                        variant="standard"
+                                                        value={item.type}
+                                                        onChange={(e) => {
+                                                            const updatedDataList = [...leaveDaysDate]
+                                                            updatedDataList[index].type = e.target.value
+                                                            setLeaveDaysDate(updatedDataList)
+                                                        }}
+                                                    >
+                                                        <MenuItem value={'Full Day'}>Full Day</MenuItem>
+                                                        <MenuItem value={'Morning'}>Morning</MenuItem>
+                                                        <MenuItem value={'Afternoon'}>Afternoon</MenuItem>
+                                                    </CustomSelect>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                )
-                            })}
+                                    )
+                                })
+                            )}
                         </div>
                         <div className="absolute font-medium text-gray-500 bottom-0 p-4 text-lg  w-full flex ">
                             <div>Total Leave</div>
@@ -326,12 +715,24 @@ export default function ApplyLeave() {
 
                 <DialogActions>
                     <div className="flex gap-5">
-                        <Button variant="contained" color="inherit" autoFocus onClick={handleClickSave}>
+                        <Button variant="contained" color="inherit" autoFocus onClick={clickOpenFalse}>
                             Cancel
                         </Button>
-                        <Button type="submit" variant="contained" color="primary" autoFocus>
+                        <LoadingButton
+                            startIcon={<AddIcon />}
+                            disabled={error || !errorImport}
+                            type="submit"
+                            loading={isLoading}
+                            loadingPosition="start"
+                            variant="contained"
+                            color="primary"
+                            sx={{
+                                textAlign: 'center',
+                            }}
+                            autoFocus
+                        >
                             Save changes
-                        </Button>
+                        </LoadingButton>
                     </div>
                 </DialogActions>
             </form>
@@ -347,6 +748,11 @@ export default function ApplyLeave() {
                 leaveType: 'Sick Leave',
                 status: 'Approved',
                 reason: 'nghỉ ốm',
+                dateRange: [
+                    { title: '15 Sep', type: 'Full Day' },
+                    { title: '16 Sep', type: 'Full Day' },
+                    { title: '17 Sep', type: 'Full Day' },
+                ],
             },
             {
                 id: '2',
@@ -355,6 +761,11 @@ export default function ApplyLeave() {
                 leaveType: 'Casual Leave',
                 status: 'Reject',
                 reason: 'nghỉ phép',
+                dateRange: [
+                    { title: '15 Sep', type: 'Full Day' },
+                    { title: '16 Sep', type: 'Full Day' },
+                    { title: '17 Sep', type: 'Full Day' },
+                ],
             },
             {
                 id: '3',
@@ -363,10 +774,15 @@ export default function ApplyLeave() {
                 leaveType: 'Sick Leave',
                 status: 'Pending',
                 reason: 'nghỉ ốm',
+                dateRange: [
+                    { title: '15 Sep', type: 'Full Day' },
+                    { title: '16 Sep', type: 'Full Day' },
+                    { title: '17 Sep', type: 'Full Day' },
+                ],
             },
         ]
 
-        return data.map((item, index) => ({
+        return ApplyLeaveByEmployee.map((item, index) => ({
             ...item,
             type: item.leaveType,
             date: (
@@ -376,29 +792,27 @@ export default function ApplyLeave() {
             ),
             day: calculateDays(item.startDate, item.endDate),
             status:
-                item.status == 'Approved' ? (
-                    <Tooltip title="Approved by Đạt">
-                        <button className="bg-green-300 w-24 text-green-600 font-semibold py-1 px-2 rounded-xl">
-                            Approved
-                        </button>
-                    </Tooltip>
-                ) : item.status == 'Reject' ? (
-                    <Tooltip title="Reject by Đạt ">
-                        <button className="bg-red-300  w-24 font-semibold py-1 px-2 rounded-xl">Reject</button>
-                    </Tooltip>
+                item.status == 1 ? (
+                    <button className="bg-green-300 w-24 text-green-700 font-semibold py-1 px-2 rounded-xl">
+                        Approved
+                    </button>
+                ) : item.status == 2 ? (
+                    <button className="bg-red-300 text-red-700  w-24 font-semibold py-1 px-2 rounded-xl">Reject</button>
                 ) : (
-                    <button className="bg-orange-300  w-24 font-semibold py-1 px-2 rounded-xl">Pending</button>
+                    <button className="bg-orange-300 text-orange-700 w-24 font-semibold py-1 px-2 rounded-xl">
+                        Pending
+                    </button>
                 ),
             number: index + 1,
             action: (
                 <div className="flex gap-2 justify-center">
-                    <Tooltip onClick={() => handleClickOpenUpdate(item)} title="Edit">
-                        <IconButton>
+                    <Tooltip title="Edit">
+                        <IconButton onClick={() => handleClickOpenUpdate(item)}>
                             <EditIcon />
                         </IconButton>
                     </Tooltip>
-                    <Tooltip onClick={handleClickOpenConfirm} title="Delete">
-                        <IconButton>
+                    <Tooltip title="Delete">
+                        <IconButton onClick={handleClickOpenConfirm}>
                             <DeleteIcon />
                         </IconButton>
                     </Tooltip>
@@ -407,7 +821,7 @@ export default function ApplyLeave() {
         }))
     }
     const rows = createRows()
-    console.log('search', search)
+    console.log('search', dateRange)
     return (
         <div>
             <Navbar />
@@ -437,21 +851,20 @@ export default function ApplyLeave() {
                         </div>
                     </div>
                     <div className="bg-white p-4">
-                        <div className="mb-5 flex items-center">
-                            <div className="ml-auto md:mr-16 mr-4">
-                                <FilterListIcon className="" />
-                            </div>
-                        </div>
                         <div>
-                            <TableData
-                                tableHeight={520}
-                                rows={rows}
-                                columns={columns}
-                                page={page}
-                                rowsPerPage={rowsPerPage}
-                                handleChangePage={handleChangePage}
-                                handleChangeRowsPerPage={handleChangeRowsPerPage}
-                            />
+                            {loading == true ? (
+                                <TableLoadData columns={columns} tableHeight={620} />
+                            ) : (
+                                <TableData
+                                    tableHeight={570}
+                                    rows={rows}
+                                    columns={columns}
+                                    page={page}
+                                    rowsPerPage={rowsPerPage}
+                                    handleChangePage={handleChangePage}
+                                    handleChangeRowsPerPage={handleChangeRowsPerPage}
+                                />
+                            )}
                         </div>
                     </div>
                 </div>

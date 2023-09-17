@@ -91,7 +91,6 @@ const createRows = () => {
             <div className="flex gap-2 items-center ">
                 {' '}
                 {/* Added the class 'align-center' for centering */}
-                <img src={item.avatar} alt={item.name} style={{ width: 40, height: 40, borderRadius: '50%' }} />
                 <p className="font-bold">{item.name}</p>
             </div>
         ),

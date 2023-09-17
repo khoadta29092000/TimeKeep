@@ -49,7 +49,7 @@ export default function MonthAttendance() {
     console.log(days, formik.values.startTime)
 
     return (
-        <div className="flex-1 h-screen">
+        <div className="flex-1 ">
             <div className="px-12 py-6">
                 <h2 className="font-bold text-3xl mb-4">Month Attendance</h2>
                 <div className="mb-8 font-semibold">
@@ -105,7 +105,7 @@ export default function MonthAttendance() {
                                                 key={index}
                                                 className="border-[1px] font-medium text-center text-gray-500 px-2 py-4 min-w-[150px]"
                                             >
-                                                {index}
+                                                {index + 1}
                                             </th>
                                         ))}
                                 </tr>
