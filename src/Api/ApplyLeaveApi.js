@@ -21,6 +21,15 @@ export const GetApplyLeaveByIdApi = async (id) => {
         throw error
     }
 }
+export const GetApplyLeaveByRequestIdApi = async (id) => {
+    try {
+        const response = await axios.get(`${API_URL}/RequestLeave/get-request-leave-by-request-id?requestId=${id}`)
+        return response.data
+    } catch (error) {
+        throw error
+    }
+}
+
 export const GetWorkDateSettingByIdApi = async (id) => {
     try {
         const response = await axios.get(`${API_URL}/RequestLeave/get-work-date-setting-of-employee?employeeId=${id}`)
@@ -37,6 +46,7 @@ export const GetApplyLeaveTypeApi = async () => {
         throw error
     }
 }
+
 export const PostApplyLeaveApi = async (id, body) => {
     try {
         const response = await axios.post(
@@ -55,6 +65,15 @@ export const PutApplyLeaveApi = async (id, body) => {
             `${API_URL}/RequestLeave/edit-request-leave-of-employee?employeeId=${id}`,
             body
         )
+        return response.data
+    } catch (error) {
+        throw error
+    }
+}
+
+export const PutApproveApplyLeaveApi = async (id) => {
+    try {
+        const response = await axios.patch(`${API_URL}/RequestLeave/approve-leave-request?requestId=${id}`)
         return response.data
     } catch (error) {
         throw error

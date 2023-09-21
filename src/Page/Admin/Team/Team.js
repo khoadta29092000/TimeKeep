@@ -57,7 +57,7 @@ import { DeleteDepartmentApi } from '../../../Api/DepartmentApi'
 const columns = [
     { id: 'number', label: 'Number', minWidth: 50, align: 'center' },
     { id: 'info', label: 'Name', minWidth: 200, align: 'left' },
-    { id: 'manager', label: 'Manager', minWidth: 200, align: 'center' },
+    // { id: 'manager', label: 'Manager', minWidth: 200, align: 'center' },
     { id: 'action', label: 'Actions', minWidth: 50, align: 'center' },
 ]
 
@@ -106,13 +106,13 @@ export default function Team() {
         initialValues: initialValues,
         validationSchema: Yup.object({
             name: Yup.string().min(5, 'Too Short!').max(4000, 'Too Long!').required(),
-            managerName: Yup.string().min(5, 'Too Short!').max(4000, 'Too Long!').required(),
+            //   managerName: Yup.string().min(5, 'Too Short!').max(4000, 'Too Long!').required(),
         }),
         onSubmit: (values) => {
             if (isAction == 1) {
                 setLoadingButton(true)
                 const body = {
-                    managerId: values.managerName,
+                    //   managerId: values.managerName,
                     name: values.name,
                 }
                 dispatch(PostDepartmentAsyncApi(body)).then((response) => {
@@ -275,7 +275,7 @@ export default function Team() {
                         )}
                     </div>
 
-                    <div className="my-2">
+                    {/* <div className="my-2">
                         <FormControl fullWidth>
                             <InputLabel size="small" id="demo-simple-select-label">
                                 Manager
@@ -304,7 +304,7 @@ export default function Team() {
                         {formik.errors.managerName && formik.touched.managerName && (
                             <div className="text mt-1 text-red-600 font-semibold">{formik.errors.managerName}</div>
                         )}
-                    </div>
+                    </div> */}
                 </div>
 
                 <DialogActions>

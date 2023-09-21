@@ -10,6 +10,7 @@ import GetWorkedApi, {
     PostWorkedSlotApi,
     PostWorkedSlotEmployeeApi,
     PostWorkEmployeeByDepartmentApi,
+    PutApproveWorkedApi,
 } from '../../Api/WorkedApi'
 
 const initialState = {
@@ -105,6 +106,10 @@ const authSlice = createSlice({
             .addCase(PutWorkedAsyncApi.pending, (state) => {})
             .addCase(PutWorkedAsyncApi.fulfilled, (state, action) => {})
             .addCase(PutWorkedAsyncApi.rejected, (state, action) => {})
+        builder
+            .addCase(PutApproveWorkedAsyncApi.pending, (state) => {})
+            .addCase(PutApproveWorkedAsyncApi.fulfilled, (state, action) => {})
+            .addCase(PutApproveWorkedAsyncApi.rejected, (state, action) => {})
         builder
             .addCase(DeleteWorkedAsyncApi.pending, (state) => {})
             .addCase(DeleteWorkedAsyncApi.fulfilled, (state, action) => {})
@@ -225,6 +230,16 @@ export const PutWorkedAsyncApi = createAsyncThunk('WorkedReducer/putAsyncApi', a
     try {
         const response = await PutWorkedApi(id, body)
         return response.data // Trả về dữ liệu từ response nếu thành công
+    } catch (error) {
+        const json = error.response.data
+        const errors = json[''].errors
+        throw errors[0].errorMessage
+    }
+})
+export const PutApproveWorkedAsyncApi = createAsyncThunk('WorkedReducer/PutApproveWorkedApi', async (id) => {
+    try {
+        const response = await PutApproveWorkedApi(id)
+        return response
     } catch (error) {
         const json = error.response.data
         const errors = json[''].errors

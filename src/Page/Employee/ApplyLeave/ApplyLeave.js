@@ -784,13 +784,14 @@ export default function ApplyLeave() {
 
         return ApplyLeaveByEmployee.map((item, index) => ({
             ...item,
+
             type: item.leaveType,
             date: (
                 <div className="text-blue-600 font-medium">
                     {formatDate(item.startDate)} ~ {formatDate(item.endDate)}
                 </div>
             ),
-            day: calculateDays(item.startDate, item.endDate),
+            day: item.dateRange.length,
             status:
                 item.status == 1 ? (
                     <button className="bg-green-300 w-24 text-green-700 font-semibold py-1 px-2 rounded-xl">

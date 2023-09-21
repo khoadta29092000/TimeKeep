@@ -37,7 +37,7 @@ export const GetRiskSettingByIdApi = async (id) => {
 
 export const PutDateSettingByIdApi = async (body) => {
     try {
-        const response = await axios.get(`${API_URL}/WorkDateSetting`, body)
+        const response = await axios.patch(`${API_URL}/WorkDateSetting`, body)
         return response.data
     } catch (error) {
         throw error
@@ -45,7 +45,7 @@ export const PutDateSettingByIdApi = async (body) => {
 }
 export const PutTimeSettingByIdApi = async (body) => {
     try {
-        const response = await axios.get(`${API_URL}/WorkSetting/UpdateTimeSetting`, body)
+        const response = await axios.put(`${API_URL}/WorkSetting/UpdateTimeSetting`, body)
         return response.data
     } catch (error) {
         throw error
@@ -53,7 +53,7 @@ export const PutTimeSettingByIdApi = async (body) => {
 }
 export const PutLeaveSettingByIdApi = async (body) => {
     try {
-        const response = await axios.get(`${API_URL}/WorkSetting/UpdateLeaveSetting`, body)
+        const response = await axios.patch(`${API_URL}/LeaveSetting`, body)
         return response.data
     } catch (error) {
         throw error

@@ -126,7 +126,7 @@ export default function WorkSlot() {
             dispatch(
                 GetWorkedSlotAsyncApi({
                     id: res.payload[0].id,
-                    month: formatDateExact(selectedDateRange.startDate),
+                    month: formatDateExact(currentMonth),
                 })
             )
             setDepartment(res.payload[0].id)
@@ -141,7 +141,7 @@ export default function WorkSlot() {
                     dispatch(
                         GetWorkedSlotAsyncApi({
                             id: Department,
-                            month: formatDateExact(selectedDateRange.startDate),
+                            month: formatDateExact(currentMonth),
                         })
                     )
                     setDepartment(Department)
@@ -320,7 +320,7 @@ export default function WorkSlot() {
         console.log('eventInfo.event', eventInfo.event)
         if (eventInfo.event.title === 'Not working') {
             return (
-                <div className="working-event ">
+                <div className="working-event text-black">
                     <b>{eventInfo.timeText}</b>
                     <div className="flex my-2 gap-2 bg-none items-center mx-auto ml-4">
                         <button className="rounded-full bg-gray-600 w-2 h-2"></button>
@@ -331,7 +331,7 @@ export default function WorkSlot() {
         } else {
             // Xử lý hiển thị các sự kiện khác
             return (
-                <div>
+                <div className="text-black">
                     <b>{eventInfo.timeText}</b>
                     <div className="flex my-2 gap-2 bg-none items-center mx-auto ml-4">
                         <button className="rounded-full bg-green-600 w-2 h-2"></button>
@@ -355,24 +355,25 @@ export default function WorkSlot() {
         )
             .then((response) => {
                 if (response.meta.requestStatus == 'fulfilled') {
-                    // dispatch(
-                    //     PostWorkedSlotEmployeeAsyncApi({
-                    //         departmentId: Department,
-                    //         month: currentMonth,
-                    //     })
-                    // )
-                    dispatch(getDepartmentAsyncApi()).then((res) => {
-                        setLoadingButton(false)
-                        dispatch(
-                            GetWorkedSlotAsyncApi({
-                                id: res.payload[0].id,
-                                month: formatDateExact(selectedDateRange.startDate),
+                    dispatch(
+                        PostWorkedSlotEmployeeAsyncApi({
+                            departmentId: Department,
+                            month: currentMonth,
+                        })
+                    ).then((res) => {
+                        dispatch(getDepartmentAsyncApi()).then((res) => {
+                            setLoadingButton(false)
+                            dispatch(
+                                GetWorkedSlotAsyncApi({
+                                    id: res.payload[0].id,
+                                    month: formatDateExact(currentMonth),
+                                })
+                            )
+                            setDepartment(res.payload[0].id)
+                            showSnackbar({
+                                severity: 'success',
+                                children: 'Create Work Slot Department successfully',
                             })
-                        )
-                        setDepartment(res.payload[0].id)
-                        showSnackbar({
-                            severity: 'success',
-                            children: 'Create Work Slot Department successfully',
                         })
                     })
                 }
@@ -459,6 +460,8 @@ export default function WorkSlot() {
                         daysHidden={[6, 5]}
                         editable={true}
                         droppable={true}
+                        eventBackgroundColor={'#ffffff'}
+                        eventBorderColor={'#ffffff'}
                         className="custom-calendar"
                     />
                 </div>

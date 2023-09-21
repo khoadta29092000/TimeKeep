@@ -99,6 +99,14 @@ export const PutWorkedApi = async (id, body) => {
         throw error
     }
 }
+export const PutApproveWorkedApi = async (id) => {
+    try {
+        const response = await axios.patch(`${API_URL}/RequestWorkTime/approve-work-time-request?employeeId=${id}`)
+        return response.data
+    } catch (error) {
+        throw error
+    }
+}
 
 export const DeleteWorkedApi = async (id) => {
     try {

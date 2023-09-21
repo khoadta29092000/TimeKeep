@@ -1,11 +1,13 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
-import { GetWorkedSlotByIdEmployeeApi } from '../../Api/WorkSlotEmployeeApi'
-
+import {
+    GetWorkedSlotByIdDepartmentApi,
+    GetWorkedSlotByIdEmployeeApi,
+    GetWorkedSlotExcelApi,
+} from '../../Api/WorkSlotEmployeeApi'
 
 const initialState = {
-   
     WorkSlotByEmployee: [],
-   
+    WorkSlotByDepartment: [],
 }
 
 const authSlice = createSlice({
@@ -14,7 +16,7 @@ const authSlice = createSlice({
     reducers: {
         clearWorkSlotEmployeeed: (state, action) => {
             state.WorkSlotByEmployee = []
-           
+            state.WorkSlotByDepartment = []
         },
         ChangeTab: (state, action) => {
             console.log('action', action)
@@ -33,7 +35,27 @@ const authSlice = createSlice({
             .addCase(getWorkSlotEmployeeedAsyncApi.rejected, (state, action) => {
                 state.loading = false
             })
-       
+        builder
+            .addCase(GetWorkedSlotByIdDepartmentAsyncApi.pending, (state) => {
+                state.loading = true
+            })
+            .addCase(GetWorkedSlotByIdDepartmentAsyncApi.fulfilled, (state, action) => {
+                state.WorkSlotByDepartment = action.payload
+                state.loading = false
+            })
+            .addCase(GetWorkedSlotByIdDepartmentAsyncApi.rejected, (state, action) => {
+                state.loading = false
+            })
+        builder
+            .addCase(GetWorkedSlotExcelAsyncApi.pending, (state) => {
+                state.loading = true
+            })
+            .addCase(GetWorkedSlotExcelAsyncApi.fulfilled, (state, action) => {
+                state.loading = false
+            })
+            .addCase(GetWorkedSlotExcelAsyncApi.rejected, (state, action) => {
+                state.loading = false
+            })
     },
 })
 
@@ -51,3 +73,29 @@ export const getWorkSlotEmployeeedAsyncApi = createAsyncThunk('WorkSlotEmployeee
     }
 })
 
+export const GetWorkedSlotByIdDepartmentAsyncApi = createAsyncThunk(
+    'WorkSlotEmployeeedReducer/GetWorkedSlotByIdDepartmentApi',
+    async ({ id, startTime, endTime }) => {
+        try {
+            const response = await GetWorkedSlotByIdDepartmentApi(id, startTime, endTime)
+            return response
+        } catch (error) {
+            const json = error.response.data
+            const errors = json[''].errors
+            throw errors[0].errorMessage
+        }
+    }
+)
+export const GetWorkedSlotExcelAsyncApi = createAsyncThunk(
+    'WorkSlotEmployeeedReducer/GetWorkedSlotExcelApi',
+    async (id) => {
+        try {
+            const response = await GetWorkedSlotExcelApi(id)
+            return response
+        } catch (error) {
+            const json = error.response.data
+            const errors = json[''].errors
+            throw errors[0].errorMessage
+        }
+    }
+)

@@ -77,6 +77,22 @@ const authSlice = createSlice({
             .addCase(getRiskSettingAsyncApi.rejected, (state, action) => {
                 state.loading = false
             })
+        builder
+            .addCase(putDateSettingAsyncApi.pending, (state) => {})
+            .addCase(putDateSettingAsyncApi.fulfilled, (state, action) => {})
+            .addCase(putDateSettingAsyncApi.rejected, (state, action) => {})
+        builder
+            .addCase(putTimeSettingAsyncApi.pending, (state) => {})
+            .addCase(putTimeSettingAsyncApi.fulfilled, (state, action) => {})
+            .addCase(putTimeSettingAsyncApi.rejected, (state, action) => {})
+        builder
+            .addCase(putLeaveSettingAsyncApi.pending, (state) => {})
+            .addCase(putLeaveSettingAsyncApi.fulfilled, (state, action) => {})
+            .addCase(putLeaveSettingAsyncApi.rejected, (state, action) => {})
+        builder
+            .addCase(putRiskSettingAsyncApi.pending, (state) => {})
+            .addCase(putRiskSettingAsyncApi.fulfilled, (state, action) => {})
+            .addCase(putRiskSettingAsyncApi.rejected, (state, action) => {})
     },
 })
 
@@ -128,7 +144,7 @@ export const getRiskSettingAsyncApi = createAsyncThunk('SettingReducer/getRiskSe
 export const putDateSettingAsyncApi = createAsyncThunk('SettingReducer/putDateSettingAsyncApi', async (body) => {
     try {
         const response = await PutDateSettingByIdApi(body)
-        return response.data
+        return response
     } catch (error) {
         const json = error.response.data
         const errors = json[''].errors
@@ -139,7 +155,7 @@ export const putDateSettingAsyncApi = createAsyncThunk('SettingReducer/putDateSe
 export const putTimeSettingAsyncApi = createAsyncThunk('SettingReducer/putTimeSettingAsyncApi', async (body) => {
     try {
         const response = await PutTimeSettingByIdApi(body)
-        return response.data
+        return response
     } catch (error) {
         const json = error.response.data
         const errors = json[''].errors
@@ -149,7 +165,7 @@ export const putTimeSettingAsyncApi = createAsyncThunk('SettingReducer/putTimeSe
 export const putLeaveSettingAsyncApi = createAsyncThunk('SettingReducer/putLeaveSettingAsyncApi', async (body) => {
     try {
         const response = await PutLeaveSettingByIdApi(body)
-        return response.data
+        return response
     } catch (error) {
         const json = error.response.data
         const errors = json[''].errors
@@ -159,7 +175,7 @@ export const putLeaveSettingAsyncApi = createAsyncThunk('SettingReducer/putLeave
 export const putRiskSettingAsyncApi = createAsyncThunk('SettingReducer/putRiskSettingAsyncApi', async (body) => {
     try {
         const response = await PutRiskSettingByIdApi(body)
-        return response.data
+        return response
     } catch (error) {
         const json = error.response.data
         const errors = json[''].errors

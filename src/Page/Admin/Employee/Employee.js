@@ -56,7 +56,7 @@ import {
     getEmployeeAsyncApi,
 } from '../../../Redux/Employee/employeeSlice'
 import { PostAccountAsyncApi, getRoleAsyncApi } from '../../../Redux/Account/AccountSlice'
-import { getDepartmentAsyncApi } from '../../../Redux/Department/DepartmentSlice'
+import { GetDepartmentWithoutAsyncApi, getDepartmentAsyncApi } from '../../../Redux/Department/DepartmentSlice'
 
 const columns = [
     { id: 'number', label: 'Number', minWidth: 50, align: 'center' },
@@ -97,14 +97,16 @@ export default function EmployeeAdmin() {
 
     const { RoleList } = useSelector((state) => state.account)
     const { EmployeeList } = useSelector((state) => state.employee)
-    const { DepartmentList } = useSelector((state) => state.department)
+    const { DepartmentWithoutList, DepartmentList } = useSelector((state) => state.department)
     const dispatch = useDispatch()
     useEffect(() => {
         dispatch(getEmployeeAsyncApi({ roleId: '', departmentId: '', name: search }))
+        dispatch(GetDepartmentWithoutAsyncApi())
         dispatch(getDepartmentAsyncApi())
         dispatch(getRoleAsyncApi())
         return () => {}
     }, [search])
+
     const initialValues = {
         id: '',
         username: '',
@@ -187,7 +189,13 @@ export default function EmployeeAdmin() {
                     address: values.address,
                     phoneNumber: values.phoneNumber,
                     roleID: values.roleID,
-                    departmentID: values.departmentID == '' ? null : values.departmentID,
+                    departmentID:
+                        values.roleID == 'c4345666-4d7b-11ee-be56-0242ac120002' ||
+                        values.roleID == 'c43450f8-4d7b-11ee-be56-0242ac120002'
+                            ? values.departmentID
+                            : values.departmentID == ''
+                            ? null
+                            : values.departmentID,
                 }
                 setLoadingButton(true)
                 dispatch(PutEmployeeAsyncApi(values))
@@ -499,7 +507,15 @@ export default function EmployeeAdmin() {
                         )}
                     </div>
 
-                    <div className="my-2">
+                    <div
+                        className={` ${
+                            formik.values.roleID == 'c43450f8-4d7b-11ee-be56-0242ac120002'
+                                ? `my-2`
+                                : formik.values.roleID == 'c4345666-4d7b-11ee-be56-0242ac120002'
+                                ? `my-2`
+                                : `hidden invisible`
+                        }`}
+                    >
                         <FormControl fullWidth>
                             <InputLabel size="small" id="demo-simple-select-label">
                                 Department
@@ -507,7 +523,11 @@ export default function EmployeeAdmin() {
                             <Select
                                 id="outlined-basic"
                                 size="small"
-                                disabled={formik.values.roleID == 'c43450f8-4d7b-11ee-be56-0242ac120002' ? false : true}
+                                disabled={
+                                    formik.values.roleID == 'c4345666-4d7b-11ee-be56-0242ac120002' && isAction == 2
+                                        ? true
+                                        : false
+                                }
                                 error={formik.touched.departmentID && formik.errors.departmentID ? true : undefined}
                                 className="w-full"
                                 value={formik.values.departmentID}
@@ -517,13 +537,21 @@ export default function EmployeeAdmin() {
                                 label="Department"
                                 variant="outlined"
                             >
-                                {DepartmentList.map((item, index) => {
-                                    return (
-                                        <MenuItem key={index} value={item.id}>
-                                            {item.name}
-                                        </MenuItem>
-                                    )
-                                })}
+                                {formik.values.roleID == 'c43450f8-4d7b-11ee-be56-0242ac120002' || isAction == 2
+                                    ? DepartmentList.map((item, index) => {
+                                          return (
+                                              <MenuItem key={index} value={item.id}>
+                                                  {item.name}
+                                              </MenuItem>
+                                          )
+                                      })
+                                    : DepartmentWithoutList.map((item, index) => {
+                                          return (
+                                              <MenuItem key={index} value={item.id}>
+                                                  {item.name}
+                                              </MenuItem>
+                                          )
+                                      })}
                             </Select>
                         </FormControl>
                         {formik.errors.departmentID && formik.touched.departmentID && (

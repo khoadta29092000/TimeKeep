@@ -51,16 +51,16 @@ export default function Navbar() {
     const userString = localStorage.getItem('role')
     const userObject = JSON.parse(userString)
     useEffect(() => {
-        // if (userObject && userObject == 'Manager') {
-        //     history.push('/Manager/Employee')
-        // } else if (userObject && userObject == 'User') {
-        // } else if (userObject && userObject == 'HR') {
-        //     history.push('/Hr/ManageLeave')
-        // } else if (userObject && userObject == 'Admin') {
-        //     history.push('/Admin/Team')
-        // } else {
-        //     history.push('')
-        // }
+        if (userObject && userObject == 'Manager') {
+            history.push('/Manager/Employee')
+        } else if (userObject && userObject == 'User') {
+        } else if (userObject && userObject == 'HR') {
+            history.push('/Hr/ManageLeave')
+        } else if (userObject && userObject == 'Admin') {
+            history.push('/Admin/Team')
+        } else {
+            history.push('')
+        }
     }, [])
     const userStringRole = localStorage.getItem('role')
     const role = JSON.parse(userStringRole)

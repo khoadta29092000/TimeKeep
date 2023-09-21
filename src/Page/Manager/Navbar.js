@@ -57,16 +57,16 @@ export default function NavbarManager() {
     const userString = localStorage.getItem('role')
     const userObject = JSON.parse(userString)
     useEffect(() => {
-        // if (userObject && userObject == 'Manager') {
-        // } else if (userObject && userObject == 'User') {
-        //     history.push('/Employee/Dashboard')
-        // } else if (userObject && userObject == 'HR') {
-        //     history.push('/Hr/ManageLeave')
-        // } else if (userObject && userObject == 'Admin') {
-        //     history.push('/Admin/Team')
-        // } else {
-        //     history.push('')
-        // }
+        if (userObject && userObject == 'Manager') {
+        } else if (userObject && userObject == 'User') {
+            history.push('/Employee/Dashboard')
+        } else if (userObject && userObject == 'HR') {
+            history.push('/Hr/ManageLeave')
+        } else if (userObject && userObject == 'Admin') {
+            history.push('/Admin/Team')
+        } else {
+            history.push('')
+        }
     }, [])
 
     const handleClick = (event) => {

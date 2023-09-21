@@ -1,12 +1,15 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 //date-picker-range
 import { DateRangePicker } from 'react-date-range'
 import 'react-date-range/dist/styles.css'
 import 'react-date-range/dist/theme/default.css'
+import dayjs from 'dayjs'
 //mui
 import { Button, Stack, Avatar, Autocomplete, TextField } from '@mui/material'
-
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
+import { DesktopDatePicker } from '@mui/x-date-pickers/DesktopDatePicker'
 //icon
 import FilterListIcon from '@mui/icons-material/FilterList'
 import DashboardIcon from '@mui/icons-material/Dashboard'
@@ -18,10 +21,18 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload'
 import IconBreadcrumbs from '../../../Components/Breadcrumbs'
 import Navbar from '../Navbar'
 import PopupData from '../../../Components/Popup'
-import { formattedDate } from '../../../Hook/useFormatDate'
+import { formatDateExact, formattedDate, getDateToMonth, getDayOfWeek } from '../../../Hook/useFormatDate'
 
 //style
 import './Style.css'
+import { useDispatch, useSelector } from 'react-redux'
+import {
+    GetWorkedSlotByIdDepartmentAsyncApi,
+    GetWorkedSlotExcelAsyncApi,
+} from '../../../Redux/WorkSlotEmployee/WorkSlotEmployeeSlice'
+import { getEmployeeAsyncApi, getEmployeeByIdAsyncApi } from '../../../Redux/Employee/employeeSlice'
+import { formatDate } from '@fullcalendar/core'
+import axios from 'axios'
 
 const breadcrumbIcons = () => {
     const data = [
@@ -66,10 +77,76 @@ export default function TimeSheet() {
         key: 'selection',
     })
 
+    const [selectedDate, setSelectedDate] = useState(dayjs())
+    //setting redux
+    const { WorkSlotByDepartment, loading } = useSelector((state) => state.WorkSlotEmployee)
+    const { EmployeeList } = useSelector((state) => state.employee)
+    const dispatch = useDispatch()
+    useEffect(() => {
+        const { format, parse } = require('date-fns')
+        const userStringEmployeeName = localStorage.getItem('employeeId')
+        const employeeId = JSON.parse(userStringEmployeeName)
+        dispatch(getEmployeeByIdAsyncApi(employeeId)).then((response) => {
+            if (response.meta.requestStatus == 'fulfilled') {
+                console.log('effect', response)
+                // dispatch(getEmployeeAsyncApi({ roleId: '', departmentId: response.payload.departmentId, name: '' }))
+                dispatch(
+                    GetWorkedSlotByIdDepartmentAsyncApi({
+                        id: response.payload.departmentId,
+                        //  id: '4752ec79-a7e7-427e-9eb4-c8e96744278f',
+                        startTime: format(selectedDateRange.startDate, 'yyyy/MM/dd'),
+                        endTime: format(selectedDateRange.endDate, 'yyyy/MM/dd'),
+                    })
+                )
+            }
+        })
+
+        return () => {}
+    }, [selectedDateRange])
     const handleDateRangeChange = (ranges) => {
         setSelectedDateRange(ranges.selection)
     }
+    function base64ToArrayBuffer(data) {
+        var binaryString = window.atob(data)
+        var binaryLen = binaryString.length
+        var bytes = new Uint8Array(binaryLen)
+        for (var i = 0; i < binaryLen; i++) {
+            var ascii = binaryString.charCodeAt(i)
+            bytes[i] = ascii
+        }
+        return bytes
+    }
 
+    async function handleDownloadExcelTemplate() {
+        const userStringEmployeeName = localStorage.getItem('employeeId')
+        const employeeId = JSON.parse(userStringEmployeeName)
+        const response = await dispatch(getEmployeeByIdAsyncApi(employeeId))
+
+        if (response.meta.requestStatus === 'fulfilled') {
+            try {
+                const downloadResponse = await axios.get(
+                    `https://timekeepingsystem.azurewebsites.net/api/WorkSlotEmployee/export-excel-file?departmentId=${response.payload.departmentId}`,
+                    {
+                        responseType: 'blob', // Set the response type to blob
+                    }
+                )
+
+                if (downloadResponse.status === 200) {
+                    const blob = new Blob([downloadResponse.data], { type: downloadResponse.headers['content-type'] })
+                    const url = window.URL.createObjectURL(blob)
+                    const link = document.createElement('a')
+                    link.href = url
+                    link.download = 'WorkSlotEmployeeReport.xlsx' // Specify the desired file name
+                    link.click()
+                    window.URL.revokeObjectURL(url)
+                } else {
+                    console.error('Failed to download file')
+                }
+            } catch (error) {
+                console.error('Error:', error)
+            }
+        }
+    }
     const clickOpenFalse = (event) => {
         setOpen(false)
         setSelectedDateRange({
@@ -83,6 +160,9 @@ export default function TimeSheet() {
     }
     const handleClickSave = () => {
         setOpen(false)
+    }
+    const handleDateChange = (newDate) => {
+        setSelectedDate(newDate)
     }
     const topName = ['khoa', 'việt', 'tài']
     const viewModalContent = (
@@ -135,22 +215,27 @@ export default function TimeSheet() {
                                 </Button>
                             </Stack>
                             <div className="ml-auto my-4 md:my-0 flex items-center gap-4 mr-4">
-                                <Button variant="contained" size="small" startIcon={<FileDownloadIcon />}>
+                                <Button
+                                    onClick={handleDownloadExcelTemplate}
+                                    variant="contained"
+                                    size="small"
+                                    startIcon={<FileDownloadIcon />}
+                                >
                                     Export
                                 </Button>
                                 <FilterListIcon className="" />
                             </div>
                         </div>
-                        <div className="my-4">
+                        {/* <div className="my-4 flex gap-5">
                             <Autocomplete
                                 disablePortal
                                 id="combo-box-demo"
-                                options={topName}
+                                options={EmployeeList}
                                 size="small"
                                 sx={{ width: 250 }}
                                 renderInput={(params) => <TextField {...params} label="Search Employee" />}
                             />
-                        </div>
+                        </div> */}
                         <div className="overflow-x-auto ">
                             <table className="w-full table-fixed">
                                 <thead>
@@ -173,7 +258,7 @@ export default function TimeSheet() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {dataList.map((item, index) => {
+                                    {WorkSlotByDepartment.map((item, index) => {
                                         return (
                                             <tr key={index}>
                                                 <td className="py-5 border-r-2 px-2">
@@ -197,9 +282,9 @@ export default function TimeSheet() {
                                                                         className="min-w-[190px] border-[2px] border-red-300 border-dashed truncate"
                                                                     >
                                                                         <div className="flex mx-2 mt-1">
-                                                                            <div>Jun</div>
+                                                                            <div>{getDayOfWeek(working.date)}</div>
                                                                             <div className="text-gray-400 ml-auto">
-                                                                                23
+                                                                                {getDateToMonth(working.date)}
                                                                             </div>
                                                                         </div>
                                                                         <div className="transition ease-in-out hover:scale-110 m-2 delay-150 py-1 px-2 bg-red-100">
@@ -227,24 +312,24 @@ export default function TimeSheet() {
                                                                             </div>
                                                                             <div className="flex items-center">
                                                                                 <div className="text-gray-400 font-medium">
-                                                                                    {working.work}
+                                                                                    {working.duration}
                                                                                 </div>
                                                                                 <div
                                                                                     id="work"
                                                                                     className="uppercase text-xs text-gray-400 ml-auto"
                                                                                 >
-                                                                                    work
+                                                                                    Work
                                                                                 </div>
                                                                             </div>
                                                                             <div className="flex items-center">
                                                                                 <div className="text-gray-400 font-medium">
-                                                                                    {working.active}
+                                                                                    {working.overTime}
                                                                                 </div>
                                                                                 <div
                                                                                     id="active"
                                                                                     className="uppercase text-xs text-gray-400 ml-auto"
                                                                                 >
-                                                                                    active
+                                                                                    OverTime
                                                                                 </div>
                                                                             </div>
                                                                         </div>
@@ -260,7 +345,9 @@ export default function TimeSheet() {
                                                         className="transition ease-in-out hover:scale-110 m-2 w-[200px] delay-150 py-1 px-2 bg-yellow-100"
                                                     >
                                                         <div className="flex items-center">
-                                                            <div className="text-gray-400 font-medium">00hh 00mm</div>
+                                                            <div className="text-gray-400 font-medium">
+                                                                {item.totalWorkedHours}
+                                                            </div>
                                                             <div
                                                                 id="out"
                                                                 className="uppercase text-xs text-gray-400 ml-auto"
@@ -269,21 +356,14 @@ export default function TimeSheet() {
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center">
-                                                            <div className="text-gray-400 font-medium">00hh 00mm</div>
+                                                            <div className="text-gray-400 font-medium">
+                                                                {item.totalOvertime}
+                                                            </div>
                                                             <div
                                                                 id="in"
                                                                 className="uppercase text-xs text-gray-400 ml-auto"
                                                             >
-                                                                Active time
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center">
-                                                            <div className="text-gray-400 font-medium">00hh 00mm</div>
-                                                            <div
-                                                                id="work"
-                                                                className="uppercase text-xs text-gray-400 ml-auto"
-                                                            >
-                                                                Worked days
+                                                                Over time
                                                             </div>
                                                         </div>
                                                     </div>

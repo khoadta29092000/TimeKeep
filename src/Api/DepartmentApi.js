@@ -10,6 +10,14 @@ const GetDepartmentApi = async () => {
         throw error
     }
 }
+export const GetDepartmentWithoutApi = async () => {
+    try {
+        const response = await axios.get(`${API_URL}/Department/get-department-without-manager`)
+        return response.data
+    } catch (error) {
+        throw error
+    }
+}
 export const GetDepartmentByIdApi = async (id) => {
     try {
         const response = await axios.get(`${API_URL}/Department/${id}`)

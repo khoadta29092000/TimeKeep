@@ -27,7 +27,7 @@ import PopupConfirm from '../../../Components/PopupConfirm'
 //hooks
 import { formatDate, formatDateExact } from '../../../Hook/useFormatDate'
 import { useDispatch, useSelector } from 'react-redux'
-import { PutWorkedAsyncApi, getWorkedAsyncApi } from '../../../Redux/Worked/WorkedSlice'
+import { PutApproveWorkedAsyncApi, PutWorkedAsyncApi, getWorkedAsyncApi } from '../../../Redux/Worked/WorkedSlice'
 import { useSnackbar } from '../../../Hook/useSnackbar'
 import NavbarHR from '../NavbarHR'
 import TableLoadData from '../../../Components/TableLoad'
@@ -193,12 +193,7 @@ export default function ManageWorked() {
             })
     }
     const handleClickReject = (data) => {
-        setLoadingRJButton(true)
-        const Updatedata = {
-            id: data.id,
-            status: 2,
-        }
-        dispatch(PutWorkedAsyncApi({ id: data.employeeId, body: Updatedata }))
+        dispatch(PutApproveWorkedAsyncApi(data.id))
             .then((response) => {
                 setLoadingRJButton(false)
 

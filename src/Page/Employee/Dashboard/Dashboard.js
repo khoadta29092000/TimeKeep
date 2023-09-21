@@ -195,25 +195,24 @@ export default function DashboardEmployee() {
             { date: '03/07/2023', startTime: '0', stopTime: '0', duration: '0', status: 'Not Working' },
         ]
 
-        return (
-            WorkSlotByEmployee.timeSlot &&
-            WorkSlotByEmployee.timeSlot.map((item, index) => ({
-                ...item,
-                number: index + 1,
-                date: item.date && formatDate(item.date),
-                startTime: item.startTime,
-                stopTime: item.stopTime,
-                duration: item.duration, // calculateDuration(item.startTime, item.stopTime),
-                status: item.status,
-                action: (
-                    <Tooltip title="View Detail">
-                        <IconButton>
-                            <VisibilityIcon />
-                        </IconButton>
-                    </Tooltip>
-                ),
-            }))
-        )
+        return WorkSlotByEmployee.timeSlot
+            ? WorkSlotByEmployee.timeSlot.map((item, index) => ({
+                  ...item,
+                  number: index + 1,
+                  date: item.date && formatDate(item.date),
+                  startTime: item.startTime,
+                  stopTime: item.stopTime,
+                  duration: item.duration, // calculateDuration(item.startTime, item.stopTime),
+                  status: item.status,
+                  action: (
+                      <Tooltip title="View Detail">
+                          <IconButton>
+                              <VisibilityIcon />
+                          </IconButton>
+                      </Tooltip>
+                  ),
+              }))
+            : []
     }
     const rows = createRows()
 

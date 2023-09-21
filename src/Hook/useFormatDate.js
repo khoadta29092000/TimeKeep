@@ -24,13 +24,16 @@ export const calculateDuration = (startTime, endTime) => {
         .toString()
         .padStart(2, '0')}:${durationSeconds.toString().padStart(2, '0')}`
 }
-export function formatTimeToDate(startDate) {
-    if (!startDate) return null // Bổ sung kiểm tra
+export function formatTimeToDate(startTime) {
+    if (!startTime) return null
 
-    const timeComponents = startDate.split(':')
+    const timeComponents = startTime.split(':')
+    const hours = parseInt(timeComponents[0], 10)
+    const minutes = parseInt(timeComponents[1], 10)
+
+    // Tạo một đối tượng Date với giờ và phút tương ứng
     const currentDate = new Date()
-    currentDate.setHours(parseInt(timeComponents[0], 10))
-    currentDate.setMinutes(parseInt(timeComponents[1], 10))
+    currentDate.setHours(hours, minutes, 0, 0)
 
     return currentDate
 }
@@ -97,6 +100,11 @@ export const getDayOfWeek = (dateString) => {
     const dayOfWeek = date.getDay() // Lấy thứ của ngày (0-6, 0 là Chủ Nhật)
 
     return daysOfWeek[dayOfWeek]
+}
+export const getDateToMonth = (dateString) => {
+    const date = new Date(dateString)
+    const dayOfWeek = date.getDate() // Lấy thứ của ngày (0-6, 0 là Chủ Nhật)
+    return dayOfWeek
 }
 
 export const formatDateToMonth = (date) => {

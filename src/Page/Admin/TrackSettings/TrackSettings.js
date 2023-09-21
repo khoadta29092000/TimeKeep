@@ -10,6 +10,8 @@ import {
     InputLabel,
     FormControlLabel,
     Button,
+    Tooltip,
+    IconButton,
 } from '@mui/material'
 import { DemoContainer } from '@mui/x-date-pickers/internals/demo'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
@@ -20,7 +22,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 //icon
 import DashboardIcon from '@mui/icons-material/Dashboard'
 import BadgeIcon from '@mui/icons-material/Badge'
-
+import DeleteIcon from '@mui/icons-material/Delete'
 //component
 import IconBreadcrumbs from '../../../Components/Breadcrumbs'
 import Navbar from '../Navbar'
@@ -32,9 +34,21 @@ import {
     getLeaveSettingAsyncApi,
     getRiskSettingAsyncApi,
     getTimeSettingAsyncApi,
+    putDateSettingAsyncApi,
+    putRiskSettingAsyncApi,
+    putTimeSettingAsyncApi,
 } from '../../../Redux/Setting/SettingSlice'
-import { formatTimeToDate } from '../../../Hook/useFormatDate'
+import { FormatDateToTime, formatTimeToDate } from '../../../Hook/useFormatDate'
+import { useSnackbar } from '../../../Hook/useSnackbar'
+import PopupData from '../../../Components/Popup'
+import TableData from '../../../Components/Table'
 
+const columns = [
+    { id: 'number', label: 'Number', minWidth: 50, align: 'center' },
+    { id: 'leaveTypeName', label: 'Type Name', minWidth: 200, align: 'left' },
+    { id: 'maxDateLeave', label: 'Date Leave', minWidth: 200, align: 'left' },
+    { id: 'action', label: 'Actions', minWidth: 50, align: 'center' },
+]
 const breadcrumbIcons = () => {
     const data = [
         { title: 'Dashboard', icon: <DashboardIcon />, url: '/', status: true },
@@ -46,6 +60,7 @@ const breadcrumbIcons = () => {
 const dataBreadcrumbs = breadcrumbIcons()
 
 export default function TrackSettings() {
+    const showSnackbar = useSnackbar()
     const initialDateStatus = {
         monday: true,
         tuesday: true,
@@ -92,13 +107,21 @@ export default function TrackSettings() {
     }
     const [days, setDays] = useState()
 
-    const handleChangeDays = (event) => {
-        setDays(event.target.value)
+    const handleChangeDays = (event, value, reason) => {
+        console.log('bala', value, event.target.value, reason)
+        if (reason === 'selectOption') {
+            console.log('bala', value, event.target.value, reason)
+            setDays(value)
+        }
     }
+    console.log('bala', days)
     const [hours, setHours] = useState()
 
-    const handleChangeHours = (event) => {
-        setHours(event.target.value)
+    const handleChangeHours = (event, value, reason) => {
+        if (reason === 'selectOption') {
+            // Sử dụng giá trị được chọn hoặc xóa để cập nhật days
+            setHours(value)
+        }
     }
     const [dayLeave, setDayLeave] = useState()
 
@@ -114,6 +137,16 @@ export default function TrackSettings() {
     const handleChangeDepartment = (event) => {
         setDepartment(event.target.value)
     }
+    const [page, setPage] = useState(0)
+    const [rowsPerPage, setRowsPerPage] = useState(10)
+    const handleChangePage = (newPage) => {
+        setPage(newPage)
+    }
+    const handleChangeRowsPerPage = (event) => {
+        setRowsPerPage(+event.target.value)
+        setPage(0)
+    }
+
     const { DepartmentList } = useSelector((state) => state.department)
     const { dateSetting, timeSetting, leaveSetting, riskSetting } = useSelector((state) => state.setting)
     const dispatch = useDispatch()
@@ -157,32 +190,27 @@ export default function TrackSettings() {
         {
             Department &&
                 dispatch(getDepartmentAsyncApi()).then((res) => {
-                    dispatch(getDepartmentAsyncApi()).then((res) => {
-                        dispatch(getDateSettingAsyncApi(res.payload[0].id)).then((resDate) => {
-                            setDateStatus(resDate.payload.dateStatus)
-                        })
-                        dispatch(getTimeSettingAsyncApi(res.payload[0].id)).then((resTime) => {
-                            console.log('ngu', resTime.payload)
-                            const startTimeMorning = formatTimeToDate(resTime.payload.fromHourMorning)
-                            const endTimeMorning = formatTimeToDate(resTime.payload.toHourMorning)
-                            const startTimeAfternoon = formatTimeToDate(resTime.payload.fromHourAfternoon)
-                            const endTimeAfternoon = formatTimeToDate(resTime.payload.toHourAfternoon)
-
-                            setSelectedStartTimeMorning(startTimeMorning)
-                            setSelectedEndTimeMorning(endTimeMorning)
-                            setSelectedStartTimeAfternoon(startTimeAfternoon)
-                            setSelectedEndTimeAfternoon(endTimeAfternoon)
-                        })
-                        dispatch(getLeaveSettingAsyncApi(res.payload[0].id))
-                        dispatch(getRiskSettingAsyncApi(res.payload[0].id)).then((resRisk) => {
-                            console.log('ngu', resRisk.payload.days)
-                            setDays(resRisk.payload.days)
-                            setHours(resRisk.payload.hours)
-                        })
-                        dispatch(getRiskSettingAsyncApi(Department))
+                    dispatch(getDateSettingAsyncApi(Department)).then((resDate) => {
+                        setDateStatus(resDate.payload.dateStatus)
                     })
+                    dispatch(getTimeSettingAsyncApi(Department)).then((resTime) => {
+                        console.log('ngu', resTime.payload)
+                        const startTimeMorning = formatTimeToDate(resTime.payload.fromHourMorning)
+                        const endTimeMorning = formatTimeToDate(resTime.payload.toHourMorning)
+                        const startTimeAfternoon = formatTimeToDate(resTime.payload.fromHourAfternoon)
+                        const endTimeAfternoon = formatTimeToDate(resTime.payload.toHourAfternoon)
 
-                    setDepartment(Department)
+                        setSelectedStartTimeMorning(startTimeMorning)
+                        setSelectedEndTimeMorning(endTimeMorning)
+                        setSelectedStartTimeAfternoon(startTimeAfternoon)
+                        setSelectedEndTimeAfternoon(endTimeAfternoon)
+                    })
+                    dispatch(getLeaveSettingAsyncApi(Department))
+                    dispatch(getRiskSettingAsyncApi(Department)).then((resRisk) => {
+                        console.log('ngu', resRisk.payload.days)
+                        setDays(resRisk.payload.days)
+                        setHours(resRisk.payload.hours)
+                    })
                 })
         }
 
@@ -190,7 +218,100 @@ export default function TrackSettings() {
     }, [Department])
     console.log('sada', dateSetting, timeSetting, leaveSetting, riskSetting)
     console.log('che', days, hours)
+    const handleClickChangeDate = () => {
+        console.log('sada1', dateStatus)
+        const body = {
+            id: dateSetting.id,
+            dateStatus: dateStatus,
+            isDeleted: dateSetting.isDeleted,
+        }
+        dispatch(putDateSettingAsyncApi(body)).then((res) => {
+            if (res.meta.requestStatus == 'fulfilled') {
+                showSnackbar({
+                    severity: 'success',
+                    children: 'Change Date Setting successfully',
+                })
 
+                dispatch(getDateSettingAsyncApi(Department)).then((resDate) => {
+                    setDateStatus(resDate.payload.dateStatus)
+                })
+            }
+        })
+    }
+    const handleClickChangeRisk = () => {
+        console.log('sada1', dateStatus)
+        const body = {
+            id: riskSetting.id,
+            hours: hours,
+            days: days,
+            dateSet: riskSetting.dateSet,
+            isDeleted: riskSetting.isDeleted,
+        }
+        dispatch(putRiskSettingAsyncApi(body)).then((res) => {
+            if (res.meta.requestStatus == 'fulfilled') {
+                showSnackbar({
+                    severity: 'success',
+                    children: 'Change Risk Setting successfully',
+                })
+
+                dispatch(getRiskSettingAsyncApi(Department)).then((resRisk) => {
+                    console.log('ngu', resRisk.payload.days)
+                    setDays(resRisk.payload.days)
+                    setHours(resRisk.payload.hours)
+                })
+            }
+        })
+    }
+    const handleClickChangeTime = () => {
+        console.log('sada1', dateStatus)
+        const body = {
+            id: timeSetting.id,
+            fromHourMorning: FormatDateToTime(selectedStartTimeMorning),
+            toHourMorning: FormatDateToTime(selectedEndTimeMorning),
+            fromHourAfternoon: FormatDateToTime(selectedStartTimeAfternoon),
+            toHourAfternoon: FormatDateToTime(selectedEndTimeAfternoon),
+            isDeleted: false,
+        }
+        dispatch(putTimeSettingAsyncApi(body)).then((res) => {
+            if (res.meta.requestStatus == 'fulfilled') {
+                showSnackbar({
+                    severity: 'success',
+                    children: 'Change Time Setting successfully',
+                })
+                dispatch(getTimeSettingAsyncApi(Department)).then((resTime) => {
+                    console.log('ngu', resTime.payload)
+                    const startTimeMorning = formatTimeToDate(resTime.payload.fromHourMorning)
+                    const endTimeMorning = formatTimeToDate(resTime.payload.toHourMorning)
+                    const startTimeAfternoon = formatTimeToDate(resTime.payload.fromHourAfternoon)
+                    const endTimeAfternoon = formatTimeToDate(resTime.payload.toHourAfternoon)
+
+                    setSelectedStartTimeMorning(startTimeMorning)
+                    setSelectedEndTimeMorning(endTimeMorning)
+                    setSelectedStartTimeAfternoon(startTimeAfternoon)
+                    setSelectedEndTimeAfternoon(endTimeAfternoon)
+                })
+            }
+        })
+    }
+    const handleClickDelete = () => {}
+    // const createRows = () => {
+    //     return leaveSetting
+    //         ? leaveSetting.map((item, index) => ({
+    //               ...item,
+
+    //               action: (
+    //                   <div className="flex gap-2 justify-center">
+    //                       <Tooltip onClick={() => handleClickDelete(item.employeeId)} title="Delete">
+    //                           <IconButton>
+    //                               <DeleteIcon />
+    //                           </IconButton>
+    //                       </Tooltip>
+    //                   </div>
+    //               ),
+    //           }))
+    //         : []
+    // }
+    // const rows = createRows()
     return (
         <div>
             <Navbar />
@@ -243,7 +364,7 @@ export default function TrackSettings() {
                                     ))}
                             </div>
                             <div className="mt-auto">
-                                <Button className="float-right" variant="contained">
+                                <Button onClick={handleClickChangeDate} className="float-right" variant="contained">
                                     Save Change
                                 </Button>
                             </div>
@@ -256,7 +377,7 @@ export default function TrackSettings() {
                                     key={days} // Thêm key ở đây
                                     size="small"
                                     options={listDays}
-                                    onChange={(e) => handleChangeDays(e)}
+                                    onChange={handleChangeDays}
                                     value={days}
                                     renderInput={(params) => <TextField {...params} />}
                                     getOptionLabel={(option) => option.toString()}
@@ -268,7 +389,7 @@ export default function TrackSettings() {
                                     key={hours} // Thêm key ở đây
                                     size="small"
                                     options={listHours}
-                                    onChange={(e) => handleChangeHours(e)}
+                                    onChange={handleChangeHours}
                                     value={hours}
                                     renderInput={(params) => <TextField {...params} />}
                                     getOptionLabel={(option) => option.toString()}
@@ -276,7 +397,7 @@ export default function TrackSettings() {
                             </FormControl>
                             <div className=" my-2 "> days </div>
                             <div className="mt-auto">
-                                <Button className="float-right" variant="contained">
+                                <Button onClick={handleClickChangeRisk} className="float-right" variant="contained">
                                     Save Change
                                 </Button>
                             </div>
@@ -337,14 +458,14 @@ export default function TrackSettings() {
                                 </div>
                             </div>
                             <div className="mt-auto">
-                                <Button className="float-right" variant="contained">
+                                <Button onClick={handleClickChangeTime} className="float-right" variant="contained">
                                     Save Change
                                 </Button>
                             </div>
                         </div>
-                        <div className="bg-white col-span-1 p-4 sm:mb-0 mb-10 flex flex-col ">
+                        {/* <div className="bg-white col-span-1 p-4 sm:mb-0 mb-10 flex flex-col ">
                             <h2 className="text-lg">Leave Setting</h2>
-                            <div className="my-2">This Department is entitled to a maximum of </div>
+                           <div className="my-2">This Department is entitled to a maximum of </div>
                             <FormControl fullWidth>
                                 <Autocomplete
                                     size="small"
@@ -359,8 +480,17 @@ export default function TrackSettings() {
                                 <Button className="float-right" variant="contained">
                                     Save Change
                                 </Button>
-                            </div>
-                        </div>
+                            </div> 
+                            <TableData
+                                tableHeight={200}
+                                rows={rows}
+                                columns={columns}
+                                page={page}
+                                rowsPerPage={rowsPerPage}
+                                handleChangePage={handleChangePage}
+                                handleChangeRowsPerPage={handleChangeRowsPerPage}
+                            />
+                        </div> */}
                     </div>
                 </div>
             </div>
